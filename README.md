@@ -74,13 +74,13 @@ bham features.
 * %tag expansion
 * If/Else Statements
 * Tag Nesting
+* Range statements for collection data structures
 
 ## To Be Implemented Features
 
 * {{ }} For embedded pipeline output
 * = ... for Lines with pipelines on them
 * Parentheses for HTML-like attributes
-* Range statements for collection data structures
 * With statement for limited visibility variables
 * Template Variables
 * Class and ID shorthand
