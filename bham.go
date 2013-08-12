@@ -39,14 +39,6 @@ func Parse(name, text string) (map[string]*parse.Tree, error) {
 	return map[string]*parse.Tree{name[:i] + name[i+5:]: proto.treeify()}, proto.err
 }
 
-func ParseFiles(filenames ...string) (*parse.Tree, error) {
-	return nil, nil
-}
-
-func ParseGlob(pattern string) (*parse.Tree, error) {
-	return nil, nil
-}
-
 type protoTree struct {
 	name      string
 	source    string
