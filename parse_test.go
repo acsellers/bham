@@ -93,25 +93,20 @@ func TestParseIf(t *testing.T) {
 	})
 }
 
-/*
-		proto := &protoTree{
-			source: `%html
-  %head
-    = if .ShowWat
-      %title wat
-    = else
-      %title name
-  %body`}
-		proto.tokenize()
-		test.IsNil(proto.err)
+func TestParseIfElse(t *testing.T) {
+	Within(t, func(test *Test) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t= if .ShowWat\n\t\t\t%title wat\n\t\t= else\n\t\t\t%title taw")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
 
-		test.AreEqual(
-			[]string{"<html>", "<head>", "if", ".ShowWat",
-				"then", "<title>", "wat", "</title>",
-				"else", "<title>", "name", "</title>", "end",
-				"</head>", "<body>", "</body>", "</html>"},
-			proto.tokenList,
-		)
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"ShowWat": true})
+		test.AreEqual("<html><head><title>wat</title></head></html>", b.String())
+
+		b.Reset()
+		t.Execute(b, map[string]interface{}{"ShowWat": false})
+		test.AreEqual("<html><head><title>taw</title></head></html>", b.String())
 	})
 }
-*/
