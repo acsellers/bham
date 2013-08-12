@@ -76,7 +76,7 @@ func (pt *protoTree) treeify() *parse.Tree {
 func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 	listNode := new(parse.ListNode)
 
-	var currentIndex, textIndex, ifIndex int
+	var currentIndex, textIndex, ifIndex, rangeIndex int
 	var currentToken token
 
 	for currentIndex < len(listarea) {
@@ -125,8 +125,34 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 
 			currentIndex = ifIndex + 1
 		case pse_range:
-			fmt.Println("ERROR: range not written yet")
-			currentIndex++
+			rangeNode := &parse.RangeNode{
+				parse.BranchNode{
+					NodeType: parse.NodeRange,
+					Pipe:     pt.pipeify(currentToken.content),
+				},
+			}
+			listNode.Nodes = append(listNode.Nodes, rangeNode)
+
+			rangeIndex = currentIndex + 1
+			for listarea[rangeIndex].parent() != currentIndex {
+				rangeIndex++
+			}
+			rangeNode.BranchNode.List = pt.listify(
+				listarea[currentIndex+1 : rangeIndex],
+			)
+
+			if listarea[rangeIndex].purpose == pse_else {
+				currentIndex = rangeIndex
+				rangeIndex = currentIndex + 1
+				for listarea[rangeIndex].parent() != currentIndex {
+					rangeIndex++
+				}
+				rangeNode.BranchNode.ElseList = pt.listify(
+					listarea[currentIndex+1 : rangeIndex],
+				)
+			}
+
+			currentIndex = rangeIndex + 1
 		case pse_with:
 			fmt.Println("ERROR: with not written yet")
 			currentIndex++
