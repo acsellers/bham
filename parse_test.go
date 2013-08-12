@@ -59,3 +59,17 @@ func TestParse(t *testing.T) {
 		test.AreEqual("<html><head><title>wat</title></head></html>", b.String())
 	})
 }
+
+func TestParse2(t *testing.T) {
+	Within(t, func(test *Test) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t%title\n\t\t\twat")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, nil)
+		test.AreEqual("<html><head><title>wat</title></head></html>", b.String())
+	})
+}

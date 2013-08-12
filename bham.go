@@ -20,6 +20,7 @@ var (
 	// Like the template library, you need to be able to set code delimeters
 	LeftDelim  = "{{"
 	RightDelim = "}}"
+	LineDelim  = "="
 
 	// Since bham will likely need to break templates around a yield call
 	// you may set suffixes for the file name to be set in the
@@ -86,6 +87,9 @@ func (pt *protoTree) tokenize() error {
 			pt.tokenList = append(pt.tokenList, "<"+currentTag+">")
 			posts = append(posts, "</"+currentTag+">")
 			text = text[len(currentTag)+1:]
+		} else {
+			pt.tokenList = append(pt.tokenList, text)
+			text = ""
 		}
 		if text == "" {
 			currentLevel = lineLevel
