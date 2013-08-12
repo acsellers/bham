@@ -1,4 +1,4 @@
-# bham - Blocks Hypertext Abstraction Markup
+# bham - Blocky Hypertext Abstraction Markup
 
 bham is a similar language to something like haml, but it implements
 a subset of what haml does in order to keep the language neat and tidy.
