@@ -6,49 +6,8 @@ import (
 	"text/template"
 )
 
-/*
-func TestSteps(t *testing.T) {
-	Within(t, func(test *Test) {
-		proto := &protoTree{
-			source: `%html
-  %head
-    %title wat`}
-		proto.tokenize()
-		test.IsNil(proto.err)
-
-		test.AreEqual(
-			[]string{"<html>", "<head>", "<title>", "wat", "</title>", "</head>", "</html>"},
-			proto.tokenList,
-		)
-		proto.classify()
-		test.AreEqual(
-			"<html><head><title>wat</title></head></html>",
-			proto.classified[0].String(),
-		)
-
-		tree := proto.treeify()
-		t, _ := template.New("test").Parse("{{define \"blank\"}}blank{{end}}")
-		b := new(bytes.Buffer)
-		t.ExecuteTemplate(b, "blank", nil)
-		test.AreEqual("blank", b.String())
-
-		b.Reset()
-		t, _ = t.AddParseTree("tree", tree)
-		t.ExecuteTemplate(b, "blank", nil)
-		test.AreEqual("blank", b.String())
-
-		b.Reset()
-		t.ExecuteTemplate(b, "tree", nil)
-		test.AreEqual(
-			"<html><head><title>wat</title></head></html>",
-			b.String(),
-		)
-
-	})
-}
-*/
 func TestParse(t *testing.T) {
-	Within(t, func(test *Test) {
+	within(t, func(test *aTest) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t%title wat")
 		test.IsNil(err)
@@ -62,7 +21,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParse2(t *testing.T) {
-	Within(t, func(test *Test) {
+	within(t, func(test *aTest) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t%title\n\t\t\twat")
 		test.IsNil(err)
@@ -76,7 +35,7 @@ func TestParse2(t *testing.T) {
 }
 
 func TestParseIf(t *testing.T) {
-	Within(t, func(test *Test) {
+	within(t, func(test *aTest) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t= if .ShowWat\n\t\t\t%title wat")
 		test.IsNil(err)
@@ -94,7 +53,7 @@ func TestParseIf(t *testing.T) {
 }
 
 func TestParseIfElse(t *testing.T) {
-	Within(t, func(test *Test) {
+	within(t, func(test *aTest) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t= if .ShowWat\n\t\t\t%title wat\n\t\t= else\n\t\t\t%title taw")
 		test.IsNil(err)

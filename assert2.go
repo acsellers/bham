@@ -9,21 +9,21 @@ import (
 	"testing"
 )
 
-type Test struct {
+type aTest struct {
 	T       *testing.T
-	F       *FTest
+	F       *fTest
 	section string
 }
-type FTest struct {
+type fTest struct {
 	T       *testing.T
 	section string
 }
 
-func (test *Test) Section(s string) {
+func (test *aTest) Section(s string) {
 	test.section = s
 	test.F.section = s
 }
-func (test *Test) logDetails() {
+func (test *aTest) logDetails() {
 	_, fn, l, _ := runtime.Caller(2)
 	if test.section != "" {
 		test.T.Logf("Error in %s Section in file %s on Line %v",
@@ -35,7 +35,7 @@ func (test *Test) logDetails() {
 		test.T.Logf("Error in File %s on Line %v", fn, l)
 	}
 }
-func (test *FTest) logDetails() {
+func (test *fTest) logDetails() {
 	_, fn, l, _ := runtime.Caller(2)
 	if test.section != "" {
 		test.T.Logf("Error in %s Section in File %s on Line %v",
@@ -49,7 +49,7 @@ func (test *FTest) logDetails() {
 }
 
 // Nil tests
-func (test *Test) IsNil(v interface{}, msgs ...interface{}) {
+func (test *aTest) IsNil(v interface{}, msgs ...interface{}) {
 	if !testIsNil(v) {
 		test.logDetails()
 		test.T.Log("Nil check failed")
@@ -60,7 +60,7 @@ func (test *Test) IsNil(v interface{}, msgs ...interface{}) {
 		}
 	}
 }
-func (test *Test) IsNotNil(v interface{}, msgs ...interface{}) {
+func (test *aTest) IsNotNil(v interface{}, msgs ...interface{}) {
 	if testIsNil(v) {
 		test.logDetails()
 		test.T.Error(msgs...)
@@ -68,13 +68,13 @@ func (test *Test) IsNotNil(v interface{}, msgs ...interface{}) {
 }
 
 // bool tests
-func (test *Test) IsTrue(b bool, msgs ...interface{}) {
+func (test *aTest) IsTrue(b bool, msgs ...interface{}) {
 	if !b {
 		test.logDetails()
 		test.T.Error(msgs...)
 	}
 }
-func (test *Test) IsFalse(b bool, msgs ...interface{}) {
+func (test *aTest) IsFalse(b bool, msgs ...interface{}) {
 	if b {
 		test.logDetails()
 		test.T.Error(msgs...)
@@ -82,7 +82,7 @@ func (test *Test) IsFalse(b bool, msgs ...interface{}) {
 }
 
 // Equality test
-func (test *Test) AreEqual(x, y interface{}, msgs ...interface{}) {
+func (test *aTest) AreEqual(x, y interface{}, msgs ...interface{}) {
 	if !(reflect.DeepEqual(x, y) || strEqual(x, y)) {
 		test.logDetails()
 		test.T.Log("Equality check failed")
@@ -93,7 +93,7 @@ func (test *Test) AreEqual(x, y interface{}, msgs ...interface{}) {
 		}
 	}
 }
-func (test *Test) AreNotEqual(x, y interface{}, msgs ...interface{}) {
+func (test *aTest) AreNotEqual(x, y interface{}, msgs ...interface{}) {
 	if reflect.DeepEqual(x, y) || strEqual(x, y) {
 		test.logDetails()
 		test.T.Log("Inequality check failed")
@@ -102,19 +102,19 @@ func (test *Test) AreNotEqual(x, y interface{}, msgs ...interface{}) {
 }
 
 // String tests
-func (test *Test) StartsWith(s, pre string, msgs ...interface{}) {
+func (test *aTest) StartsWith(s, pre string, msgs ...interface{}) {
 	if !strings.HasPrefix(s, pre) {
 		test.logDetails()
 		test.T.Error(msgs...)
 	}
 }
-func (test *Test) EndsWith(s, post string, msgs ...interface{}) {
+func (test *aTest) EndsWith(s, post string, msgs ...interface{}) {
 	if !strings.HasSuffix(s, post) {
 		test.logDetails()
 		test.T.Error(msgs...)
 	}
 }
-func (test *Test) Matches(s, regex string, msgs ...interface{}) {
+func (test *aTest) Matches(s, regex string, msgs ...interface{}) {
 	matches, err := regexp.MatchString(regex, s)
 	if err != nil {
 		test.logDetails()
@@ -124,7 +124,7 @@ func (test *Test) Matches(s, regex string, msgs ...interface{}) {
 		test.T.Error(msgs...)
 	}
 }
-func (test *Test) NotMatches(s, regex string, msgs ...interface{}) {
+func (test *aTest) NotMatches(s, regex string, msgs ...interface{}) {
 	matches, err := regexp.MatchString(regex, s)
 	if err != nil {
 		test.logDetails()
@@ -136,13 +136,13 @@ func (test *Test) NotMatches(s, regex string, msgs ...interface{}) {
 }
 
 // Nil Format tests
-func (test *FTest) IsNil(v interface{}, msgFormat string, msgs ...interface{}) {
+func (test *fTest) IsNil(v interface{}, msgFormat string, msgs ...interface{}) {
 	if !testIsNil(v) {
 		test.logDetails()
 		test.T.Errorf(msgFormat, msgs...)
 	}
 }
-func (test *FTest) IsNotNil(v interface{}, msgFormat string, msgs ...interface{}) {
+func (test *fTest) IsNotNil(v interface{}, msgFormat string, msgs ...interface{}) {
 	if testIsNil(v) {
 		test.logDetails()
 		test.T.Errorf(msgFormat, msgs...)
@@ -150,13 +150,13 @@ func (test *FTest) IsNotNil(v interface{}, msgFormat string, msgs ...interface{}
 }
 
 // bool tests
-func (test *FTest) IsTrue(b bool, msgFormat string, msgs ...interface{}) {
+func (test *fTest) IsTrue(b bool, msgFormat string, msgs ...interface{}) {
 	if !b {
 		test.logDetails()
 		test.T.Errorf(msgFormat, msgs...)
 	}
 }
-func (test *FTest) IsFalse(b bool, msgFormat string, msgs ...interface{}) {
+func (test *fTest) IsFalse(b bool, msgFormat string, msgs ...interface{}) {
 	if b {
 		test.logDetails()
 		test.T.Errorf(msgFormat, msgs...)
@@ -164,13 +164,13 @@ func (test *FTest) IsFalse(b bool, msgFormat string, msgs ...interface{}) {
 }
 
 // Equality test
-func (test *FTest) AreEqual(x, y interface{}, msgFormat string, msgs ...interface{}) {
+func (test *fTest) AreEqual(x, y interface{}, msgFormat string, msgs ...interface{}) {
 	if !(reflect.DeepEqual(x, y) || strEqual(x, y)) {
 		test.logDetails()
 		test.T.Errorf(msgFormat, msgs...)
 	}
 }
-func (test *FTest) AreNotEqual(x, y interface{}, msgFormat string, msgs ...interface{}) {
+func (test *fTest) AreNotEqual(x, y interface{}, msgFormat string, msgs ...interface{}) {
 	if reflect.DeepEqual(x, y) || strEqual(x, y) {
 		test.logDetails()
 		test.T.Errorf(msgFormat, msgs...)
@@ -178,18 +178,18 @@ func (test *FTest) AreNotEqual(x, y interface{}, msgFormat string, msgs ...inter
 }
 
 // String tests
-func (test *FTest) StartsWith(s, pre, msgFormat string, msgs ...interface{}) {
+func (test *fTest) StartsWith(s, pre, msgFormat string, msgs ...interface{}) {
 	if !strings.HasPrefix(s, pre) {
 		test.logDetails()
 		test.T.Errorf(msgFormat, msgs...)
 	}
 }
-func (test *FTest) EndsWith(s, post, msgFormat string, msgs ...interface{}) {
+func (test *fTest) EndsWith(s, post, msgFormat string, msgs ...interface{}) {
 	if !strings.HasSuffix(s, post) {
 		test.T.Errorf(msgFormat, msgs...)
 	}
 }
-func (test *FTest) Matches(s, regex, msgFormat string, msgs ...interface{}) {
+func (test *fTest) Matches(s, regex, msgFormat string, msgs ...interface{}) {
 	matches, err := regexp.MatchString(regex, s)
 	if err != nil {
 		test.logDetails()
@@ -199,7 +199,7 @@ func (test *FTest) Matches(s, regex, msgFormat string, msgs ...interface{}) {
 		test.T.Errorf(msgFormat, msgs...)
 	}
 }
-func (test *FTest) NotMatches(s, regex, msgFormat string, msgs ...interface{}) {
+func (test *fTest) NotMatches(s, regex, msgFormat string, msgs ...interface{}) {
 	matches, err := regexp.MatchString(regex, s)
 	if err != nil {
 		test.logDetails()
@@ -218,6 +218,6 @@ func strEqual(x, y interface{}) bool {
 	return fmt.Sprint(x) == fmt.Sprint(y)
 }
 
-func Within(t *testing.T, f func(*Test)) {
-	f(&Test{T: t, F: &FTest{T: t}})
+func within(t *testing.T, f func(*aTest)) {
+	f(&aTest{T: t, F: &fTest{T: t}})
 }
