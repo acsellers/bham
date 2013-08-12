@@ -9,6 +9,7 @@ import (
 
 const (
 	pse_text = iota
+	pse_tag
 	pse_if
 	pse_else
 	pse_end
@@ -46,10 +47,16 @@ func (pt *protoTree) tokenize() error {
 			currentTag = tag.FindStringSubmatch(text)[1]
 			pt.tokenList = append(
 				pt.tokenList,
-				token{content: "<" + currentTag + ">"},
+				token{
+					content: "<" + currentTag + ">",
+					purpose: pse_tag,
+				},
 			)
 
-			posts = append(posts, token{content: "</" + currentTag + ">"})
+			posts = append(posts, token{
+				content: "</" + currentTag + ">",
+				purpose: pse_tag,
+			})
 			text = text[len(currentTag)+1:]
 		} else {
 			if strings.HasPrefix(text, LineDelim) {
@@ -143,4 +150,8 @@ func (t token) parent() int {
 	default:
 		return -1
 	}
+}
+
+func (t token) textual() bool {
+	return t.purpose == pse_text || t.purpose == pse_tag
 }

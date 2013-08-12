@@ -109,13 +109,13 @@ func TestParseRangeElse(t *testing.T) {
 func TestTextPassthrough(t *testing.T) {
 	within(t, func(test *aTest) {
 		t := template.New("test").Funcs(map[string]interface{}{})
-		tree, err := Parse("test.bham", "<!DOCTYPE html>\n%html\n\t%body")
+		tree, err := Parse("test.bham", "<!DOCTYPE html>\n%html\n\t%body Test Line\n\t\tTest other line")
 		test.IsNil(err)
 		t, err = t.AddParseTree("tree", tree["test"])
 		test.IsNil(err)
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"Wats": []int{1, 2}})
-		test.AreEqual("<!DOCTYPE html><html><body></body></html>", b.String())
+		test.AreEqual("<!DOCTYPE html><html><body>Test Line Test other line</body></html>", b.String())
 	})
 }

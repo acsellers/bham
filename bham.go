@@ -82,18 +82,30 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 	for currentIndex < len(listarea) {
 		currentToken = listarea[currentIndex]
 		switch currentToken.purpose {
-		case pse_text:
+		case pse_text, pse_tag:
 			textNode := new(parse.TextNode)
 			textNode.NodeType = parse.NodeText
 			listNode.Nodes = append(listNode.Nodes, textNode)
 
 			textIndex = currentIndex
-			for textIndex < len(listarea) && listarea[textIndex].purpose == pse_text {
+			for textIndex < len(listarea) && listarea[textIndex].textual() {
 				textIndex++
 			}
+			texts := []string{""}
+			lastPurpose := pse_tag
 			for _, token := range listarea[currentIndex:textIndex] {
-				textNode.Text = append(textNode.Text, []byte(token.content)...)
+				if lastPurpose == pse_tag {
+					texts[len(texts)-1] += token.content
+				} else {
+					if token.purpose == pse_tag {
+						texts[len(texts)-1] += token.content
+					} else {
+						texts = append(texts, token.content)
+					}
+				}
+				lastPurpose = token.purpose
 			}
+			textNode.Text = append(textNode.Text, []byte(strings.Join(texts, " "))...)
 			currentIndex = textIndex
 		case pse_if:
 			ifNode := &parse.IfNode{
