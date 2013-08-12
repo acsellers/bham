@@ -15,6 +15,8 @@ const (
 	pse_end
 	pse_range
 	pse_with
+	pse_decl
+	pse_exe
 )
 
 func (pt *protoTree) tokenize() error {
@@ -92,8 +94,16 @@ func (pt *protoTree) tokenize() error {
 						},
 					)
 					posts = append(posts, token{purpose: pse_end, previous: len(pt.tokenList) - 1})
+				case varDecl.MatchString(trimText):
+					pt.tokenList = append(
+						pt.tokenList,
+						token{
+							content: trimText,
+							purpose: pse_decl,
+						},
+					)
 				default:
-					pt.tokenList = append(pt.tokenList, token{content: text})
+					pt.tokenList = append(pt.tokenList, token{content: trimText, purpose: pse_exe})
 				}
 			} else {
 				pt.tokenList = append(pt.tokenList, token{content: text})

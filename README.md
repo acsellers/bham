@@ -29,7 +29,8 @@ following. I'm not sure that the {{ }} bit works yet...
 %html
   %head
     = if .PageTitle
-      %title {{.PageTitle}}
+      %title
+        = .PageTitle
     = else
       %title No Title Set
 ```
@@ -75,11 +76,11 @@ bham features.
 * If/Else Statements
 * Tag Nesting
 * Range statements for collection data structures
+* = ... for Lines with pipelines on them
 
 ## To Be Implemented Features
 
 * {{ }} For embedded pipeline output
-* = ... for Lines with pipelines on them
 * Parentheses for HTML-like attributes
 * With statement for limited visibility variables
 * Template Variables

@@ -28,7 +28,10 @@ var (
 	YieldFirstSuffix  = "-upper"
 	YieldSecondSuffix = "-lower"
 )
-var tag = regexp.MustCompile("^%([a-zA-Z0-9]+)")
+var (
+	tag     = regexp.MustCompile("^%([a-zA-Z0-9]+)")
+	varDecl = regexp.MustCompile("^\\$[a-zA-Z0-9]+ :=")
+)
 
 // parse will return a parse tree containing a single
 func Parse(name, text string) (map[string]*parse.Tree, error) {
@@ -167,6 +170,19 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 			currentIndex = rangeIndex + 1
 		case pse_with:
 			fmt.Println("ERROR: with not written yet")
+			currentIndex++
+		case pse_exe:
+			templ := listarea[currentIndex].content
+			t, e := template.New("mule").Parse("{{" + templ + "}}")
+			if e != nil {
+				listarea[currentIndex].purpose = pse_text
+				listarea[currentIndex].content = "= " + listarea[currentIndex].content
+				fmt.Printf("Couldn't parse %s\n", templ)
+				continue
+			}
+
+			main := t.Tree.Root.Nodes[0]
+			listNode.Nodes = append(listNode.Nodes, main)
 			currentIndex++
 		default:
 			fmt.Println("ERROR: token not recognized", listarea[currentIndex])

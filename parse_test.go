@@ -119,3 +119,17 @@ func TestTextPassthrough(t *testing.T) {
 		test.AreEqual("<!DOCTYPE html><html><body>Test Line Test other line</body></html>", b.String())
 	})
 }
+
+func TestOutput(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "<!DOCTYPE html>\n%html\n\t%body\n\t\t= .Name")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"Name": "Andrew"})
+		test.AreEqual("<!DOCTYPE html><html><body>Andrew</body></html>", b.String())
+	})
+}
