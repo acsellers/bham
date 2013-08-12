@@ -1,11 +1,10 @@
 package bham
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"regexp"
 	"strings"
+	"text/template"
 	"text/template/parse"
 )
 
@@ -35,7 +34,6 @@ var tag = regexp.MustCompile("^%([a-zA-Z0-9]+)")
 func Parse(name, text string) (map[string]*parse.Tree, error) {
 	proto := &protoTree{source: text}
 	proto.tokenize()
-	proto.classify()
 	i := strings.Index(name, ".bham")
 
 	return map[string]*parse.Tree{name[:i] + name[i+5:]: proto.treeify()}, proto.err
@@ -50,62 +48,10 @@ func ParseGlob(pattern string) (*parse.Tree, error) {
 }
 
 type protoTree struct {
-	name       string
-	source     string
-	tokenList  []string
-	classified []classifiers
-	err        error
-}
-
-func (pt *protoTree) tokenize() error {
-	posts := make([]string, 0, 64)
-	scanner := bufio.NewScanner(bytes.NewBufferString(pt.source))
-	var text, currentTag string
-	var currentLevel, currentLine, lineLevel int
-	for scanner.Scan() {
-		currentLine++
-
-		text = scanner.Text()
-		if text == "" {
-			continue
-		}
-
-		lineLevel, text = level(text)
-		if text == "" {
-			continue
-		}
-
-		for currentLevel >= lineLevel && currentLevel > 0 {
-			pt.tokenList = append(pt.tokenList, posts[len(posts)-1])
-			posts = posts[:len(posts)-1]
-		}
-		if lineLevel-1 > currentLevel {
-			return fmt.Errorf("Line %d is indented more than necessary (%d) from the previous line %d", currentLine, lineLevel, currentLevel)
-		}
-		if tag.MatchString(text) {
-			currentTag = tag.FindStringSubmatch(text)[1]
-			pt.tokenList = append(pt.tokenList, "<"+currentTag+">")
-			posts = append(posts, "</"+currentTag+">")
-			text = text[len(currentTag)+1:]
-		} else {
-			pt.tokenList = append(pt.tokenList, text)
-			text = ""
-		}
-		if text == "" {
-			currentLevel = lineLevel
-			continue
-		}
-		if text[0] == ' ' {
-			pt.tokenList = append(pt.tokenList, text[1:])
-			currentLevel = lineLevel
-			continue
-		}
-	}
-	for i, _ := range posts {
-		pt.tokenList = append(pt.tokenList, posts[len(posts)-i-1])
-	}
-
-	return nil
+	name      string
+	source    string
+	tokenList []token
+	err       error
 }
 
 func level(s string) (int, string) {
@@ -127,75 +73,87 @@ func level(s string) (int, string) {
 	}
 }
 
-func (pt *protoTree) classify() {
-	if pt.err != nil {
-		return
-	}
-	var currentBlock string
-	for _, token := range pt.tokenList {
-		switch {
-		case strings.HasPrefix(token, LeftDelim) && strings.HasSuffix(token, RightDelim):
-			pt.classified = append(pt.classified, textClassifier{currentBlock})
-			currentBlock = ""
-			pt.classified = append(pt.classified, fieldClassifier{token})
-		default:
-			currentBlock += token
-		}
-	}
-	if currentBlock != "" {
-		pt.classified = append(pt.classified, textClassifier{currentBlock})
-	}
-}
-
-type classifiers interface {
-	Executable() bool
-	String() string
-}
-
-type textClassifier struct {
-	data string
-}
-
-func (tc textClassifier) Executable() bool {
-	return false
-}
-
-func (tc textClassifier) String() string {
-	return tc.data
-}
-
-type fieldClassifier struct {
-	data string
-}
-
-func (fc fieldClassifier) Executable() bool {
-	return true
-}
-func (fc fieldClassifier) String() string {
-	return fc.data
-}
-
 func (pt *protoTree) treeify() *parse.Tree {
 	if pt.err != nil {
 		return nil
 	}
-	tree := &parse.Tree{Root: &parse.ListNode{
-		NodeType: parse.NodeList,
-		Pos:      0,
-	},
-	}
-	var currentPos int
-	for _, classifier := range pt.classified {
-		if classifier.Executable() {
-		} else {
-			tree.Root.Nodes = append(tree.Root.Nodes, &parse.TextNode{
-				NodeType: parse.NodeText,
-				Pos:      parse.Pos(currentPos),
-				Text:     []byte(classifier.String()),
-			})
-		}
-		currentPos += len(classifier.String())
-	}
-
+	tree := &parse.Tree{Root: pt.listify(pt.tokenList)}
 	return tree
+}
+
+func (pt *protoTree) listify(listarea []token) *parse.ListNode {
+	listNode := new(parse.ListNode)
+
+	var currentIndex, textIndex, ifIndex int
+	var currentToken token
+
+	for currentIndex < len(listarea) {
+		currentToken = listarea[currentIndex]
+		switch currentToken.purpose {
+		case pse_text:
+			textNode := new(parse.TextNode)
+			textNode.NodeType = parse.NodeText
+			listNode.Nodes = append(listNode.Nodes, textNode)
+
+			textIndex = currentIndex
+			for textIndex < len(listarea) && listarea[textIndex].purpose == pse_text {
+				textIndex++
+			}
+			for _, token := range listarea[currentIndex:textIndex] {
+				textNode.Text = append(textNode.Text, []byte(token.content)...)
+			}
+			currentIndex = textIndex
+		case pse_if:
+			ifNode := &parse.IfNode{
+				parse.BranchNode{
+					NodeType: parse.NodeIf,
+					Pipe:     pt.pipeify(currentToken.content),
+				},
+			}
+			listNode.Nodes = append(listNode.Nodes, ifNode)
+
+			ifIndex = currentIndex + 1
+			for listarea[ifIndex].parent() != currentIndex {
+				ifIndex++
+			}
+			ifNode.BranchNode.List = pt.listify(
+				listarea[currentIndex+1 : ifIndex],
+			)
+
+			if listarea[ifIndex].purpose == pse_else {
+				currentIndex = ifIndex
+				ifIndex = currentIndex + 1
+				for listarea[ifIndex].parent() != currentIndex {
+					ifIndex++
+				}
+				ifNode.BranchNode.ElseList = pt.listify(
+					listarea[currentIndex+1 : ifIndex],
+				)
+			}
+
+			currentIndex = ifIndex + 1
+		case pse_range:
+			fmt.Println("ERROR: range not written yet")
+			currentIndex++
+		case pse_with:
+			fmt.Println("ERROR: with not written yet")
+			currentIndex++
+		default:
+			fmt.Println("ERROR: token not recognized", listarea[currentIndex])
+			currentIndex++
+		}
+	}
+	return listNode
+}
+
+func (pt *protoTree) pipeify(s string) *parse.PipeNode {
+	// take the simplest way of getting text/template to parse it
+	// and then steal the result
+	t, _ := template.New("mule").Parse("{{" + s + "}}")
+	main := t.Tree.Root.Nodes[0]
+	if an, ok := main.(*parse.ActionNode); ok {
+		return an.Pipe
+	} else {
+		panic("could not locate type")
+	}
 }
