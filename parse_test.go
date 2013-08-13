@@ -133,3 +133,34 @@ func TestOutput(t *testing.T) {
 		test.AreEqual("<!DOCTYPE html><html><body>Andrew</body></html>", b.String())
 	})
 }
+
+func TestFindAttrs(t *testing.T) {
+	within(t, func(test *aTest) {
+		a, b := findAttrs("((((((")
+		test.AreEqual(a, "")
+		test.AreEqual(b, "((((((")
+
+		a, b = findAttrs("()")
+		test.AreEqual(a, "")
+		test.AreEqual(b, "")
+
+		a, b = findAttrs("(ng-app)hiip")
+		test.AreEqual(a, "ng-app")
+		test.AreEqual(b, "hiip")
+
+	})
+}
+
+func TestAttribute(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "<!DOCTYPE html>\n%html(ng-app)\n\t%body(ng-controller=\"PageController\")")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"Name": "Andrew"})
+		test.AreEqual("<!DOCTYPE html><html ng-app><body ng-controller=\"PageController\"></body></html>", b.String())
+	})
+}

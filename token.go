@@ -60,6 +60,13 @@ func (pt *protoTree) tokenize() error {
 				purpose: pse_tag,
 			})
 			text = text[len(currentTag)+1:]
+			if text != "" && text[0] == '(' && strings.Contains(text, ")") {
+				var attrs string
+				attrs, text = findAttrs(text)
+				if attrs != "" {
+					pt.tokenList[len(pt.tokenList)-1].extra = attrs
+				}
+			}
 		} else {
 			if strings.HasPrefix(text, LineDelim) {
 				trimText := strings.TrimSpace(text[len(LineDelim):])
@@ -149,6 +156,7 @@ type token struct {
 	content  string
 	purpose  int
 	previous int
+	extra    string
 }
 
 func (t token) parent() int {
@@ -164,4 +172,27 @@ func (t token) parent() int {
 
 func (t token) textual() bool {
 	return t.purpose == pse_text || t.purpose == pse_tag
+}
+
+func (t token) strcontent() string {
+	if t.purpose == pse_tag && t.extra != "" {
+		return t.content[0:len(t.content)-1] + " " + t.extra + ">"
+	}
+	return t.content
+}
+
+func findAttrs(s string) (string, string) {
+	var openings int
+	for i, r := range s {
+		switch r {
+		case '(':
+			openings++
+		case ')':
+			openings--
+			if openings == 0 {
+				return s[1:i], s[i+1:]
+			}
+		}
+	}
+	return "", s
 }

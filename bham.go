@@ -98,12 +98,12 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 			lastPurpose := pse_tag
 			for _, token := range listarea[currentIndex:textIndex] {
 				if lastPurpose == pse_tag {
-					texts[len(texts)-1] += token.content
+					texts[len(texts)-1] += token.strcontent()
 				} else {
 					if token.purpose == pse_tag {
-						texts[len(texts)-1] += token.content
+						texts[len(texts)-1] += token.strcontent()
 					} else {
-						texts = append(texts, token.content)
+						texts = append(texts, token.strcontent())
 					}
 				}
 				lastPurpose = token.purpose
@@ -173,16 +173,14 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 			currentIndex++
 		case pse_exe:
 			templ := listarea[currentIndex].content
-			t, e := template.New("mule").Parse("{{" + templ + "}}")
+			an, e := pt.safeActionify("{{" + templ + "}}")
 			if e != nil {
 				listarea[currentIndex].purpose = pse_text
 				listarea[currentIndex].content = "= " + listarea[currentIndex].content
 				fmt.Printf("Couldn't parse %s\n", templ)
 				continue
 			}
-
-			main := t.Tree.Root.Nodes[0]
-			listNode.Nodes = append(listNode.Nodes, main)
+			listNode.Nodes = append(listNode.Nodes, an)
 			currentIndex++
 		default:
 			fmt.Println("ERROR: token not recognized", listarea[currentIndex])
@@ -201,5 +199,20 @@ func (pt *protoTree) pipeify(s string) *parse.PipeNode {
 		return an.Pipe
 	} else {
 		panic("could not locate type")
+	}
+}
+
+func (pt *protoTree) safeActionify(s string) (*parse.ActionNode, error) {
+	// take the simplest way of getting text/template to parse it
+	// and then steal the result
+	t, e := template.New("mule").Parse(s)
+	if e != nil {
+		return nil, e
+	}
+	main := t.Tree.Root.Nodes[0]
+	if an, ok := main.(*parse.ActionNode); ok {
+		return an, nil
+	} else {
+		return nil, fmt.Errorf("Couldn't find action node")
 	}
 }
