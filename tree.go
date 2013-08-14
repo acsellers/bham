@@ -16,8 +16,7 @@ func (pt *protoTree) newListNode(listarea []token) *parse.ListNode {
 		currentToken = listarea[currentIndex]
 		switch currentToken.purpose {
 		case pse_text, pse_tag:
-			textNode := new(parse.TextNode)
-			textNode.NodeType = parse.NodeText
+			textNode := &parse.TextNode{NodeType: parse.NodeText}
 
 			localIndex = currentIndex
 			for localIndex < len(listarea) && listarea[localIndex].textual() {

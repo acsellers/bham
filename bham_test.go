@@ -238,3 +238,17 @@ func FuncTestVar(t *testing.T) {
 		test.AreEqual("<html>Killer</html>", b.String())
 	})
 }
+
+func TestEmbedded(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html {{ .Name }}\n\t%head\n\t\t%title(class=\"{{ .Class }}\") wat")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"Name": "Andrew Sellers", "Class": "big"})
+		test.AreEqual("<html>Andrew Sellers<head><title class=\"big\">wat</title></head></html>", b.String())
+	})
+}

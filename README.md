@@ -35,11 +35,7 @@ following. I'm not sure that the {{ }} bit works yet...
       %title No Title Set
 ```
 
-## Planned Markup Example
-
-This following excerpt exercises most if not all of the planned 
-bham features.
-
+And the big one, that shows off pretty much all the features...
 ```
 <!DOCTYPE html>
 %html(ng-app)
@@ -61,7 +57,7 @@ bham features.
       .span3
         = template "Layouts/Navigation.html" .
       .span9
-        = yield
+        = yield .
     .row-fluid
       .span10.offset1
         = range $index, $sponsor := .Sponsors
@@ -81,10 +77,12 @@ bham features.
 * Class and ID shorthand
 * With statement for limited visibility variables
 * Template Variables
+* {{ }} For embedded pipeline output
 
 ## To Be Implemented Features
 
-* {{ }} For embedded pipeline output
+* Code Quality
+* More Documentation
 
 ## Unlikely To Be Implemented Features
 

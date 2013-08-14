@@ -47,9 +47,40 @@ func safeAction(s string) (*parse.ActionNode, error) {
 }
 
 func addEmbeddable(tn *parse.TextNode) []parse.Node {
-	if strings.Contains(string(tn.Text), RightDelim) && strings.Contains(string(tn.Text), LeftDelim) {
-		return []parse.Node{tn}
-	} else {
-		return []parse.Node{tn}
+	output := make([]parse.Node, 0)
+	workingText := string(tn.Text)
+	for containsDelimeters(workingText) {
+		index := strings.Index(workingText, LeftDelim)
+		output = append(output, newTextNode(workingText[:index]))
+		workingText = workingText[index:]
+
+		index = strings.Index(workingText, RightDelim)
+		pipeText := workingText[:index+len(RightDelim)]
+		workingText = workingText[index+len(RightDelim):]
+
+		action, e := safeAction(pipeText)
+		if e != nil {
+			output = append(output, newTextNode(pipeText))
+		} else {
+			output = append(output, action)
+		}
+	}
+
+	if workingText != "" {
+		tn.Text = []byte(workingText)
+		output = append(output, tn)
+	}
+	return output
+}
+
+func containsDelimeters(s string) bool {
+	return strings.Contains(string(s), RightDelim) &&
+		strings.Contains(string(s), LeftDelim)
+}
+
+func newTextNode(text string) *parse.TextNode {
+	return &parse.TextNode{
+		NodeType: parse.NodeText,
+		Text:     []byte(text),
 	}
 }
