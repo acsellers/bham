@@ -19,6 +19,13 @@ func newpipeline(s string) *parse.PipeNode {
 	}
 }
 
+func newBranchNode(nodeType parse.NodeType, pipe string) parse.BranchNode {
+	return parse.BranchNode{
+		NodeType: nodeType,
+		Pipe:     newpipeline(pipe),
+	}
+}
+
 func safeAction(s string) (*parse.ActionNode, error) {
 	// take the simplest way of getting text/template to parse it
 	// and then steal the result
