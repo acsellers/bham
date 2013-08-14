@@ -164,3 +164,47 @@ func TestAttribute(t *testing.T) {
 		test.AreEqual("<!DOCTYPE html><html ng-app><body ng-controller=\"PageController\"></body></html>", b.String())
 	})
 }
+
+func TestClass(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t%div.see.me(class=\"soon\")")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, nil)
+		test.AreEqual("<html><body><div class=\"see me soon\"></div></body></html>", b.String())
+	})
+}
+
+func TestId(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t%div#see(id=\"me\")")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"Name": "Andrew"})
+
+		test.AreEqual("<html><body><div id=\"see_me\"></div></body></html>", b.String())
+	})
+}
+
+func TestBareId(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t#see(id=\"me\")")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"Name": "Andrew"})
+
+		test.AreEqual("<html><body><div id=\"see_me\"></div></body></html>", b.String())
+	})
+}

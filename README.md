@@ -78,13 +78,13 @@ bham features.
 * Range statements for collection data structures
 * = ... for Lines with pipelines on them
 * Parentheses for HTML-like attributes
+* Class and ID shorthand
 
 ## To Be Implemented Features
 
 * {{ }} For embedded pipeline output
 * With statement for limited visibility variables
 * Template Variables
-* Class and ID shorthand
 
 ## Unlikely To Be Implemented Features
 

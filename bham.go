@@ -29,8 +29,10 @@ var (
 	YieldSecondSuffix = "-lower"
 )
 var (
-	tag     = regexp.MustCompile("^%([a-zA-Z0-9]+)")
-	varDecl = regexp.MustCompile("^\\$[a-zA-Z0-9]+ :=")
+	tag      = regexp.MustCompile("^%([a-zA-Z0-9]+)")
+	varDecl  = regexp.MustCompile("^\\$[a-zA-Z0-9]+ :=")
+	idClass  = regexp.MustCompile("^([\\.#][a-zA-Z0-9-_]+)")
+	idClass2 = regexp.MustCompile("([\\.#][a-zA-Z0-9-_]+)")
 )
 
 // parse will return a parse tree containing a single

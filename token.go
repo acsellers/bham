@@ -60,6 +60,20 @@ func (pt *protoTree) tokenize() error {
 				purpose: pse_tag,
 			})
 			text = text[len(currentTag)+1:]
+			if text != "" && idClass.MatchString(text) {
+				pt.tokenList[len(pt.tokenList)-1].attrs = make(map[string][]string)
+				for _, submatch := range idClass2.FindAllStringSubmatch(text, -1) {
+					switch submatch[0][0] {
+					case '.':
+						pt.tokenList[len(pt.tokenList)-1].attrs["class"] = append(pt.tokenList[len(pt.tokenList)-1].attrs["class"], submatch[0][1:])
+					case '#':
+						pt.tokenList[len(pt.tokenList)-1].attrs["id"] = append(pt.tokenList[len(pt.tokenList)-1].attrs["id"], submatch[0][1:])
+					}
+				}
+				for idClass.MatchString(text) {
+					text = text[len(idClass.FindStringSubmatch(text)[0]):]
+				}
+			}
 			if text != "" && text[0] == '(' && strings.Contains(text, ")") {
 				var attrs string
 				attrs, text = findAttrs(text)
@@ -68,6 +82,29 @@ func (pt *protoTree) tokenize() error {
 				}
 			}
 		} else {
+
+			if text != "" && idClass.MatchString(text) {
+				pt.tokenList = append(pt.tokenList, token{content: "<div>", purpose: pse_tag})
+				posts = append(posts, token{content: "</div>", purpose: pse_tag})
+				pt.tokenList[len(pt.tokenList)-1].attrs = make(map[string][]string)
+				for _, submatch := range idClass2.FindAllStringSubmatch(text, -1) {
+					switch submatch[0][0] {
+					case '.':
+						pt.tokenList[len(pt.tokenList)-1].attrs["class"] = append(pt.tokenList[len(pt.tokenList)-1].attrs["class"], submatch[0][1:])
+					case '#':
+						pt.tokenList[len(pt.tokenList)-1].attrs["id"] = append(pt.tokenList[len(pt.tokenList)-1].attrs["id"], submatch[0][1:])
+					}
+				}
+				text = text[len(idClass.FindStringSubmatch(text)[0]):]
+			}
+			if text != "" && text[0] == '(' && strings.Contains(text, ")") {
+				var attrs string
+				attrs, text = findAttrs(text)
+				if attrs != "" {
+					pt.tokenList[len(pt.tokenList)-1].extra = attrs
+				}
+			}
+
 			if strings.HasPrefix(text, LineDelim) {
 				trimText := strings.TrimSpace(text[len(LineDelim):])
 				switch {
@@ -157,6 +194,7 @@ type token struct {
 	purpose  int
 	previous int
 	extra    string
+	attrs    map[string][]string
 }
 
 func (t token) parent() int {
@@ -175,8 +213,28 @@ func (t token) textual() bool {
 }
 
 func (t token) strcontent() string {
-	if t.purpose == pse_tag && t.extra != "" {
-		return t.content[0:len(t.content)-1] + " " + t.extra + ">"
+	if t.purpose == pse_tag {
+		if t.attrs != nil {
+			if vals, ok := t.attrs["id"]; ok {
+				if strings.Contains(t.extra, `id="`) {
+					idIndex := strings.Index(t.extra, `id="`)
+					t.extra = t.extra[:idIndex+4] + strings.Join(vals, "_") + "_" + t.extra[idIndex+4:]
+				} else {
+					t.extra = t.extra + " id=\"" + strings.Join(vals, "_") + "\""
+				}
+			}
+			if vals, ok := t.attrs["class"]; ok {
+				if strings.Contains(t.extra, "class=\"") {
+					classIndex := strings.Index(t.extra, `class="`)
+					t.extra = t.extra[:classIndex+7] + strings.Join(vals, " ") + " " + t.extra[classIndex+7:]
+				} else {
+					t.extra = t.extra + " class=\"" + strings.Join(vals, " ") + "\""
+				}
+			}
+		}
+		if t.extra != "" {
+			return t.content[0:len(t.content)-1] + " " + strings.TrimSpace(t.extra) + ">"
+		}
 	}
 	return t.content
 }
