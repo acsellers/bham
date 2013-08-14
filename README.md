@@ -79,12 +79,12 @@ bham features.
 * = ... for Lines with pipelines on them
 * Parentheses for HTML-like attributes
 * Class and ID shorthand
+* With statement for limited visibility variables
+* Template Variables
 
 ## To Be Implemented Features
 
 * {{ }} For embedded pipeline output
-* With statement for limited visibility variables
-* Template Variables
 
 ## Unlikely To Be Implemented Features
 

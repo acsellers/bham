@@ -208,3 +208,33 @@ func TestBareId(t *testing.T) {
 		test.AreEqual("<html><body><div id=\"see_me\"></div></body></html>", b.String())
 	})
 }
+
+func TestWith(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html\n\t= with $name := \"Killer\"\n\t\t= $name")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, nil)
+
+		test.AreEqual("<html>Killer</html>", b.String())
+	})
+}
+
+func FuncTestVar(t *testing.T) {
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", "%html\n\t= $name := \"Killer\"\n\t\t= $name")
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, nil)
+
+		test.AreEqual("<html>Killer</html>", b.String())
+	})
+}

@@ -30,6 +30,7 @@ var (
 	varDecl  = regexp.MustCompile("^\\$[a-zA-Z0-9]+ :=")
 	idClass  = regexp.MustCompile("^([\\.#][a-zA-Z0-9-_]+)")
 	idClass2 = regexp.MustCompile("([\\.#][a-zA-Z0-9-_]+)")
+	varUse   = regexp.MustCompile("(\\$[a-zA-Z0-9]+)")
 )
 
 // parse will return a parse tree containing a single
@@ -78,7 +79,7 @@ func (pt *protoTree) treeify() *parse.Tree {
 func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 	listNode := new(parse.ListNode)
 
-	var currentIndex, textIndex, ifIndex, rangeIndex int
+	var currentIndex, textIndex, ifIndex, rangeIndex, withIndex int
 	var currentToken token
 
 	for currentIndex < len(listarea) {
@@ -168,15 +169,30 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 
 			currentIndex = rangeIndex + 1
 		case pse_with:
-			fmt.Println("ERROR: with not written yet")
-			currentIndex++
+			withNode := &parse.WithNode{
+				parse.BranchNode{
+					NodeType: parse.NodeWith,
+					Pipe:     pt.pipeify(currentToken.content),
+				},
+			}
+			listNode.Nodes = append(listNode.Nodes, withNode)
+
+			withIndex = currentIndex + 1
+			for listarea[withIndex].parent() != currentIndex {
+				withIndex++
+			}
+			withNode.BranchNode.List = pt.listify(
+				listarea[currentIndex+1 : withIndex],
+			)
+
+			currentIndex = withIndex + 1
 		case pse_exe:
 			templ := listarea[currentIndex].content
 			an, e := pt.safeActionify("{{" + templ + "}}")
 			if e != nil {
 				listarea[currentIndex].purpose = pse_text
 				listarea[currentIndex].content = "= " + listarea[currentIndex].content
-				fmt.Printf("Couldn't parse %s\n", templ)
+				fmt.Printf("Couldn't parse %s, got %v\n", templ, e)
 				continue
 			}
 			listNode.Nodes = append(listNode.Nodes, an)
@@ -204,11 +220,16 @@ func (pt *protoTree) pipeify(s string) *parse.PipeNode {
 func (pt *protoTree) safeActionify(s string) (*parse.ActionNode, error) {
 	// take the simplest way of getting text/template to parse it
 	// and then steal the result
+	if varUse.MatchString(s) {
+		for _, varUser := range varUse.FindAllStringSubmatch(s, -1) {
+			s = "{{ " + varUser[0] + " := 0 }}" + s
+		}
+	}
 	t, e := template.New("mule").Parse(s)
 	if e != nil {
 		return nil, e
 	}
-	main := t.Tree.Root.Nodes[0]
+	main := t.Tree.Root.Nodes[len(t.Tree.Root.Nodes)-1]
 	if an, ok := main.(*parse.ActionNode); ok {
 		return an, nil
 	} else {
