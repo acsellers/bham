@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -17,6 +18,14 @@ const (
 	pse_with
 	pse_decl
 	pse_exe
+)
+
+var (
+	tag      = regexp.MustCompile("^%([a-zA-Z0-9]+)")
+	varDecl  = regexp.MustCompile("^\\$[a-zA-Z0-9]+ :=")
+	idClass  = regexp.MustCompile("^([\\.#][a-zA-Z0-9-_]+)")
+	idClass2 = regexp.MustCompile("([\\.#][a-zA-Z0-9-_]+)")
+	varUse   = regexp.MustCompile("(\\$[a-zA-Z0-9]+)")
 )
 
 func (pt *protoTree) tokenize() error {

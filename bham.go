@@ -2,35 +2,8 @@ package bham
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
-	"text/template"
 	"text/template/parse"
-)
-
-var (
-	// Strict determines whether only tabs will be considered
-	// as indentation operators (Strict == true) or whether
-	// two spaces can be counted as an indentation operator
-	// (Strict == false), this is included for haml
-	// semi-comapibility
-	Strict bool
-
-	// To add multiple id declarations, the outputter puts them together
-	// with a join string, by default this is an underscore
-	IdJoin = "_"
-
-	// Like the template library, you need to be able to set code delimeters
-	LeftDelim  = "{{"
-	RightDelim = "}}"
-	LineDelim  = "="
-)
-var (
-	tag      = regexp.MustCompile("^%([a-zA-Z0-9]+)")
-	varDecl  = regexp.MustCompile("^\\$[a-zA-Z0-9]+ :=")
-	idClass  = regexp.MustCompile("^([\\.#][a-zA-Z0-9-_]+)")
-	idClass2 = regexp.MustCompile("([\\.#][a-zA-Z0-9-_]+)")
-	varUse   = regexp.MustCompile("(\\$[a-zA-Z0-9]+)")
 )
 
 // parse will return a parse tree containing a single
@@ -88,7 +61,6 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 		case pse_text, pse_tag:
 			textNode := new(parse.TextNode)
 			textNode.NodeType = parse.NodeText
-			listNode.Nodes = append(listNode.Nodes, textNode)
 
 			textIndex = currentIndex
 			for textIndex < len(listarea) && listarea[textIndex].textual() {
@@ -109,12 +81,13 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 				lastPurpose = token.purpose
 			}
 			textNode.Text = append(textNode.Text, []byte(strings.Join(texts, " "))...)
+			listNode.Nodes = append(listNode.Nodes, addEmbeddable(textNode)...)
 			currentIndex = textIndex
 		case pse_if:
 			ifNode := &parse.IfNode{
 				parse.BranchNode{
 					NodeType: parse.NodeIf,
-					Pipe:     pt.pipeify(currentToken.content),
+					Pipe:     newpipeline(currentToken.content),
 				},
 			}
 			listNode.Nodes = append(listNode.Nodes, ifNode)
@@ -143,7 +116,7 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 			rangeNode := &parse.RangeNode{
 				parse.BranchNode{
 					NodeType: parse.NodeRange,
-					Pipe:     pt.pipeify(currentToken.content),
+					Pipe:     newpipeline(currentToken.content),
 				},
 			}
 			listNode.Nodes = append(listNode.Nodes, rangeNode)
@@ -172,7 +145,7 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 			withNode := &parse.WithNode{
 				parse.BranchNode{
 					NodeType: parse.NodeWith,
-					Pipe:     pt.pipeify(currentToken.content),
+					Pipe:     newpipeline(currentToken.content),
 				},
 			}
 			listNode.Nodes = append(listNode.Nodes, withNode)
@@ -188,7 +161,7 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 			currentIndex = withIndex + 1
 		case pse_exe:
 			templ := listarea[currentIndex].content
-			an, e := pt.safeActionify("{{" + templ + "}}")
+			an, e := safeAction("{{" + templ + "}}")
 			if e != nil {
 				listarea[currentIndex].purpose = pse_text
 				listarea[currentIndex].content = "= " + listarea[currentIndex].content
@@ -203,36 +176,4 @@ func (pt *protoTree) listify(listarea []token) *parse.ListNode {
 		}
 	}
 	return listNode
-}
-
-func (pt *protoTree) pipeify(s string) *parse.PipeNode {
-	// take the simplest way of getting text/template to parse it
-	// and then steal the result
-	t, _ := template.New("mule").Parse("{{" + s + "}}")
-	main := t.Tree.Root.Nodes[0]
-	if an, ok := main.(*parse.ActionNode); ok {
-		return an.Pipe
-	} else {
-		panic("could not locate type")
-	}
-}
-
-func (pt *protoTree) safeActionify(s string) (*parse.ActionNode, error) {
-	// take the simplest way of getting text/template to parse it
-	// and then steal the result
-	if varUse.MatchString(s) {
-		for _, varUser := range varUse.FindAllStringSubmatch(s, -1) {
-			s = "{{ " + varUser[0] + " := 0 }}" + s
-		}
-	}
-	t, e := template.New("mule").Parse(s)
-	if e != nil {
-		return nil, e
-	}
-	main := t.Tree.Root.Nodes[len(t.Tree.Root.Nodes)-1]
-	if an, ok := main.(*parse.ActionNode); ok {
-		return an, nil
-	} else {
-		return nil, fmt.Errorf("Couldn't find action node")
-	}
 }
