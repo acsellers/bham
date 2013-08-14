@@ -218,9 +218,9 @@ func (t token) strcontent() string {
 			if vals, ok := t.attrs["id"]; ok {
 				if strings.Contains(t.extra, `id="`) {
 					idIndex := strings.Index(t.extra, `id="`)
-					t.extra = t.extra[:idIndex+4] + strings.Join(vals, "_") + "_" + t.extra[idIndex+4:]
+					t.extra = t.extra[:idIndex+4] + strings.Join(vals, IdJoin) + IdJoin + t.extra[idIndex+4:]
 				} else {
-					t.extra = t.extra + " id=\"" + strings.Join(vals, "_") + "\""
+					t.extra = t.extra + " id=\"" + strings.Join(vals, IdJoin) + "\""
 				}
 			}
 			if vals, ok := t.attrs["class"]; ok {

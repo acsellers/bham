@@ -16,17 +16,14 @@ var (
 	// semi-comapibility
 	Strict bool
 
+	// To add multiple id declarations, the outputter puts them together
+	// with a join string, by default this is an underscore
+	IdJoin = "_"
+
 	// Like the template library, you need to be able to set code delimeters
 	LeftDelim  = "{{"
 	RightDelim = "}}"
 	LineDelim  = "="
-
-	// Since bham will likely need to break templates around a yield call
-	// you may set suffixes for the file name to be set in the
-	// return map. By default a file named "test.bham" with a yield
-	// command would have keys for both test-upper.bham and test-lower.bham
-	YieldFirstSuffix  = "-upper"
-	YieldSecondSuffix = "-lower"
 )
 var (
 	tag      = regexp.MustCompile("^%([a-zA-Z0-9]+)")
