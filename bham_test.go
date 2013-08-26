@@ -252,3 +252,23 @@ func TestEmbedded(t *testing.T) {
 		test.AreEqual("<html>Andrew Sellers<head><title class=\"big\">wat</title></head></html>", b.String())
 	})
 }
+
+func TestFilter(t *testing.T) {
+	tmplContent := `%html
+  :javascript
+    var name = "{{ .Name | js }}";
+`
+
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", tmplContent)
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"Name": "Andrew", "Class": "big"})
+		test.AreEqual("<html><script type=\"text/javascript\"> var name = \"Andrew\";</script></html>", b.String())
+
+	})
+}

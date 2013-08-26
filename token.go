@@ -91,6 +91,12 @@ func (pt *protoTree) tokenize() error {
 				}
 			}
 		} else {
+			if text[0] == ':' {
+				pt.tokenList = append(pt.tokenList, shortHandOpen(text[1:]))
+				posts = append(posts, shortHandClose(text[1:]))
+				currentLevel = lineLevel
+				text = ""
+			}
 
 			if text != "" && idClass.MatchString(text) {
 				pt.tokenList = append(pt.tokenList, token{content: "<div>", purpose: pse_tag})
