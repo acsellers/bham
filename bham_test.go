@@ -36,19 +36,27 @@ func TestParse2(t *testing.T) {
 
 func TestParseIf(t *testing.T) {
 	within(t, func(test *aTest) {
+		tmpl := `%html
+  %head
+    = if .ShowWat
+      %title wat
+  %body
+    #content
+      moo
+    `
 		t := template.New("test").Funcs(map[string]interface{}{})
-		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t= if .ShowWat\n\t\t\t%title wat")
+		tree, err := Parse("test.bham", tmpl)
 		test.IsNil(err)
 		t, err = t.AddParseTree("tree", tree["test"])
 		test.IsNil(err)
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"ShowWat": true})
-		test.AreEqual("<html><head><title>wat</title></head></html>", b.String())
+		test.AreEqual("<html><head><title>wat</title></head><body><div id=\"content\"> moo</div></body></html>", b.String())
 
 		b.Reset()
 		t.Execute(b, map[string]interface{}{"ShowWat": false})
-		test.AreEqual("<html><head></head></html>", b.String())
+		test.AreEqual("<html><head></head><body><div id=\"content\"> moo</div></body></html>", b.String())
 	})
 }
 

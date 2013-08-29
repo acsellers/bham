@@ -42,13 +42,15 @@ func (pt *protoTree) tokenize() error {
 		}
 
 		lineLevel, text = level(text)
-		for currentLevel >= lineLevel && currentLevel > 0 {
-			pt.tokenList = append(
-				pt.tokenList,
-				posts[len(posts)-1],
-			)
-			posts = posts[:len(posts)-1]
-			currentLevel--
+		if currentLevel > lineLevel {
+			for currentLevel >= lineLevel && currentLevel > 0 {
+				pt.tokenList = append(
+					pt.tokenList,
+					posts[len(posts)-1],
+				)
+				posts = posts[:len(posts)-1]
+				currentLevel--
+			}
 		}
 		if lineLevel-1 > currentLevel {
 			return fmt.Errorf("Line %d is indented more than necessary (%d) from the previous line %d", currentLine, lineLevel, currentLevel)
@@ -179,8 +181,9 @@ func (pt *protoTree) tokenize() error {
 			continue
 		}
 	}
-	for i, _ := range posts {
-		pt.tokenList = append(pt.tokenList, posts[len(posts)-i-1])
+	for len(posts) > 0 {
+		pt.tokenList = append(pt.tokenList, posts[len(posts)-1])
+		posts = posts[:len(posts)-1]
 	}
 
 	return nil
