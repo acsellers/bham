@@ -10,7 +10,9 @@ func (pt *protoTree) lex() {
 	scanner := bufio.NewScanner(bytes.NewBufferString(pt.source))
 	var line, content string
 	var currentLevel int
+	var currentLine int
 	for scanner.Scan() {
+		currentLine++
 		line = scanner.Text()
 
 		if strings.TrimSpace(line) == "" {
@@ -18,7 +20,11 @@ func (pt *protoTree) lex() {
 		}
 
 		level, content = level(line)
-		pt.lineList = append(pt.lineList, templateLine{level, content})
+		if currentLevel+1 >= level {
+			pt.lineList = append(pt.lineList, templateLine{level, content})
+		} else {
+			pt.err = fmt.Errorf("Line %d is overindented", currentLine)
+		}
 	}
 }
 
