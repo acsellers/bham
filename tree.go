@@ -48,6 +48,9 @@ func (pt *protoTree) newListNode(listarea []token) *parse.ListNode {
 			localIndex = currentIndex + 1
 			for listarea[localIndex].parent() != currentIndex {
 				localIndex++
+				if localIndex == len(listarea) {
+					panic(listarea[currentIndex])
+				}
 			}
 			ifNode.BranchNode.List = pt.newListNode(
 				listarea[currentIndex+1 : localIndex],

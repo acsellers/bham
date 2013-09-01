@@ -1,15 +1,21 @@
 package bham
 
-var ShortHands = map[string]ShortHandCode{
-	"javascript": ShortHandCode{
-		Open:  `<script type="text/javascript">`,
-		Close: "</script>",
+var Filters = []FilterHandler{
+	FilterHandler{
+		Trigger: ":javascript",
+		Open:    `<script type="text/javascript">`,
+		Close:   "</script>",
+		Handler: func(s string) { return s },
 	},
 }
 
-type ShortHandCode struct {
+type FilterHandler struct {
+	Trigger     string
 	Open, Close string
+	Handler     Transformer
 }
+
+type Transformer func(string) string
 
 func shortHandOpen(sh string) token {
 	output := token{
