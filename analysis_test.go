@@ -79,6 +79,7 @@ func TestAnalysis3(t *testing.T) {
 		test.AreEqual("<!DOCTYPE html>", pt.nodes[0].content)
 		test.AreEqual("%html", pt.nodes[1].content)
 		test.AreEqual(identTagOpen, pt.nodes[1].identifier)
+		test.AreEqual(".Script", pt.nodes[2].content)
 		test.AreEqual("%html", pt.nodes[3].content)
 	})
 }
