@@ -33,31 +33,18 @@ type protoTree struct {
 	source    string
 	lineList  []templateLine
 	nodes     []protoNode
+	currNodes []protoNode
 	tokenList []token
 	err       error
-}
-
-type templateLine struct {
-	indentation int
-	content     string
-}
-
-func (t templateLine) accept(chars string) bool {
-	for _, s := range chars {
-		if s == t.content[0] {
-			return true
-		}
-	}
-	return false
-}
-func (t templateLine) prefix(str string) bool {
-	return len(t.content) >= len(str) && t.content[:len(str)] == str
 }
 
 type protoNode struct {
 	level      int
 	identifier int
 	content    string
+	filter     FilterHandler
+	list       []protoNode
+	elseList   []protoNode
 }
 
 func (pt *protoTree) tree() *parse.Tree {

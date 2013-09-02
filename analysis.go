@@ -1,25 +1,29 @@
 package bham
 
+import (
+	"fmt"
+	"strings"
+)
+
 func (pt *protoTree) analyze() {
-	previousline := templateLine{-1, ""}
-	currentIndex := 0
-	for currentIndex < len(pt.lineList) {
+	pt.doAnalyze(0, len(pt.lineList)-1)
+	pt.nodes = pt.currNodes
+}
+
+func (pt *protoTree) doAnalyze(currentIndex, finalIndex int) {
+	for currentIndex <= finalIndex {
 		if pt.err != nil {
 			return
 		}
 
 		line := pt.lineList[currentIndex]
-		if line.indentation > previousline.indentation+1 {
-			pt.err = fmt.Errorf("Line %d is indented more than necessary", currentIndex+1)
-			return
-		}
 
 		switch {
 		case line.accept("%.#"):
-			currentIndex = pt.tagLike(currentIndex)
+			currentIndex = pt.tagLike(currentIndex, finalIndex)
 			continue
 		case line.accept("=-"):
-			currentIndex = pt.actionableLine(currentIndex)
+			currentIndex = pt.actionableLine(currentIndex, finalIndex)
 			continue
 		case line.accept(":"):
 			for _, handler := range Filters {
@@ -32,11 +36,11 @@ func (pt *protoTree) analyze() {
 			return
 		case line.prefix("!!!"):
 			pt.insertDoctype(line)
+			currentIndex++
 		default:
 			pt.insertText(line)
+			currentIndex++
 		}
-
-		currentIndex++
 	}
 }
 
@@ -58,7 +62,11 @@ func (pt *protoTree) followHandler(startIndex int, handler FilterHandler, level 
 		lines = append(lines, pad(diff)+pt.lineList[index].content)
 		index++
 	}
-	pt.insertRaw(handler.Open + handler.Handler(strings.Join(lines, "\n")) + handler.Close)
+	pt.insertFilter(
+		strings.Join(lines, "\n"),
+		pt.lineList[startIndex].indentation,
+		handler,
+	)
 
 	return index
 }
@@ -71,12 +79,96 @@ func pad(indent int) string {
 	return output
 }
 
-func (pt *protoTree) actionableLine(currentIndex int) int {
-	line := pt.lineList[currentIndex]
-	text := line.content
+func (pt *protoTree) actionableLine(startIndex, finalIndex int) int {
+	currentIndex := startIndex + 1
+	var endIndex int
+	if pt.lineList[startIndex].blockParameter() {
+		for pt.lineList[startIndex].indentation < pt.lineList[currentIndex].indentation && currentIndex < finalIndex {
+			currentIndex++
+		}
+		parentNodes := pt.currNodes
+		pt.currNodes = []protoNode{}
+		pt.doAnalyze(startIndex+1, currentIndex-1)
+		primaryNodes, secondaryNodes := pt.currNodes, []protoNode{}
 
-	return currentIndex + 1
+		if pt.lineList[startIndex].mightHaveElse() {
+			if pt.lineList[currentIndex].isElse() {
+				endIndex = currentIndex
+				currentIndex++
+				for pt.lineList[endIndex].indentation < pt.lineList[currentIndex].indentation && currentIndex < finalIndex {
+					currentIndex++
+				}
+				pt.currNodes = []protoNode{}
+				pt.doAnalyze(endIndex+1, currentIndex)
+				secondaryNodes = pt.currNodes
+			}
+		}
+		pt.currNodes = parentNodes
+		switch {
+		case pt.lineList[startIndex].isIf():
+			pt.insertIf(
+				pt.lineList[startIndex].after("-=").without("if ").String(),
+				pt.lineList[startIndex].indentation,
+				primaryNodes,
+				secondaryNodes,
+			)
+		case pt.lineList[startIndex].isUnless():
+			pt.insertIf(
+				pt.lineList[startIndex].after("-=").without("unless ").String(),
+				pt.lineList[startIndex].indentation,
+				primaryNodes,
+				secondaryNodes,
+			)
+		case pt.lineList[startIndex].isRange():
+			pt.insertRange(
+				pt.lineList[startIndex].after("-=").without("range ").String(),
+				pt.lineList[startIndex].indentation,
+				primaryNodes,
+				secondaryNodes,
+			)
+		case pt.lineList[startIndex].isWith():
+			pt.insertWith(
+				pt.lineList[startIndex].after("-=").without("with ").String(),
+				pt.lineList[startIndex].indentation,
+				primaryNodes,
+			)
+		}
+		currentIndex++
+	} else {
+		pt.insertExecutable(
+			pt.lineList[startIndex].after("-=").String(),
+			pt.lineList[startIndex].indentation,
+		)
+		currentIndex++
+	}
+
+	return currentIndex
 }
 
-func (pt *protoTree) tagLike(currentIndex int) int {
+func (pt *protoTree) tagLike(currentIndex, finalIndex int) int {
+	if finalIndex == currentIndex || pt.lineList[currentIndex+1].indentation <= pt.lineList[currentIndex].indentation {
+		pt.currNodes = append(pt.currNodes, protoNode{
+			level:      pt.lineList[currentIndex].indentation,
+			identifier: identTag,
+			content:    pt.lineList[currentIndex].content,
+		})
+		return currentIndex + 1
+	} else {
+		pt.currNodes = append(pt.currNodes, protoNode{
+			level:      pt.lineList[currentIndex].indentation,
+			identifier: identTagOpen,
+			content:    pt.lineList[currentIndex].content,
+		})
+		tagIndex := currentIndex + 1
+		for tagIndex < finalIndex && pt.lineList[tagIndex].indentation >= pt.lineList[currentIndex].indentation {
+			tagIndex++
+		}
+		pt.doAnalyze(currentIndex+1, tagIndex)
+		pt.currNodes = append(pt.currNodes, protoNode{
+			level:      pt.lineList[currentIndex].indentation,
+			identifier: identTagClose,
+			content:    pt.lineList[currentIndex].content,
+		})
+		return tagIndex + 1
+	}
 }

@@ -3,13 +3,14 @@ package bham
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"strings"
 )
 
 func (pt *protoTree) lex() {
 	scanner := bufio.NewScanner(bytes.NewBufferString(pt.source))
 	var line, content string
-	var currentLevel int
+	var currentLevel, nowLevel int
 	var currentLine int
 	for scanner.Scan() {
 		currentLine++
@@ -19,11 +20,25 @@ func (pt *protoTree) lex() {
 			continue
 		}
 
-		level, content = level(line)
-		if currentLevel+1 >= level {
-			pt.lineList = append(pt.lineList, templateLine{level, content})
+		nowLevel, content = level(line)
+		if currentLevel+1 >= nowLevel {
+			lineItem := templateLine{nowLevel, content}
+			tempLine := currentLine
+			for lineItem.needsContent() {
+				if scanner.Scan() {
+					tempLine++
+					lineItem.content = lineItem.appendContent(scanner.Text())
+				} else {
+					pt.err = fmt.Errorf("Line %d is not completed", currentLine)
+					return
+				}
+			}
+			currentLine = tempLine
+			pt.lineList = append(pt.lineList, lineItem)
+			currentLevel = nowLevel
 		} else {
 			pt.err = fmt.Errorf("Line %d is overindented", currentLine)
+			return
 		}
 	}
 }

@@ -5,7 +5,7 @@ var Filters = []FilterHandler{
 		Trigger: ":javascript",
 		Open:    `<script type="text/javascript">`,
 		Close:   "</script>",
-		Handler: func(s string) { return s },
+		Handler: Transformer(func(s string) string { return s }),
 	},
 }
 
@@ -20,11 +20,7 @@ type Transformer func(string) string
 func shortHandOpen(sh string) token {
 	output := token{
 		purpose: pse_tag,
-	}
-	if handler, ok := ShortHands[sh]; ok {
-		output.content = handler.Open
-	} else {
-		output.content = "<" + sh + ">"
+		content: "<script type=\"text/javascript\">",
 	}
 	return output
 }
@@ -32,11 +28,7 @@ func shortHandOpen(sh string) token {
 func shortHandClose(sh string) token {
 	output := token{
 		purpose: pse_tag,
-	}
-	if handler, ok := ShortHands[sh]; ok {
-		output.content = handler.Close
-	} else {
-		output.content = "</" + sh + ">"
+		content: "</script>",
 	}
 	return output
 }
