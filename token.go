@@ -122,8 +122,8 @@ func (pt *protoTree) tokenize() error {
 				}
 			}
 
-			if strings.HasPrefix(text, LineDelim) {
-				trimText := strings.TrimSpace(text[len(LineDelim):])
+			if strings.HasPrefix(text, "=") {
+				trimText := strings.TrimSpace(text[len("="):])
 				switch {
 				case strings.HasPrefix(trimText, "if "):
 					pt.tokenList = append(

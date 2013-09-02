@@ -77,10 +77,3 @@ func containsDelimeters(s string) bool {
 	return strings.Contains(string(s), RightDelim) &&
 		strings.Contains(string(s), LeftDelim)
 }
-
-func newTextNode(text string) *parse.TextNode {
-	return &parse.TextNode{
-		NodeType: parse.NodeText,
-		Text:     []byte(text),
-	}
-}

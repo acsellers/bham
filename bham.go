@@ -19,7 +19,7 @@ var Doctypes = map[string]string{
 
 // parse will return a parse tree containing a single
 func Parse(name, text string) (map[string]*parse.Tree, error) {
-	proto := &protoTree{source: text}
+	proto := &protoTree{source: text, name: name}
 	proto.tokenize()
 	i := strings.Index(name, ".bham")
 
@@ -29,13 +29,14 @@ func Parse(name, text string) (map[string]*parse.Tree, error) {
 }
 
 type protoTree struct {
-	name      string
-	source    string
-	lineList  []templateLine
-	nodes     []protoNode
-	currNodes []protoNode
-	tokenList []token
-	err       error
+	name       string
+	source     string
+	lineList   []templateLine
+	nodes      []protoNode
+	currNodes  []protoNode
+	tokenList  []token
+	outputTree *parse.Tree
+	err        error
 }
 
 type protoNode struct {
@@ -45,6 +46,11 @@ type protoNode struct {
 	filter     FilterHandler
 	list       []protoNode
 	elseList   []protoNode
+}
+
+func (pn protoNode) needsRuntimeData() bool {
+	return strings.Contains(pn.content, LeftDelim) &&
+		strings.Contains(pn.content, RightDelim)
 }
 
 func (pt *protoTree) tree() *parse.Tree {

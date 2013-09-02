@@ -21,14 +21,14 @@ Analyze =>
     If statements, range statements, etc will call 
     DoAnalyze on the sub areas of the tree to simplify
     the end/else parsing.
-Optimize =>
-  Iterates through the protoNodes array and produces 
-  an optimized pt.nodes array by combining textual 
-  nodes, pre-compiling filter blocks that don't 
-  possess runtime determined values.
 Compile =>
   Takes the optimized array of protoNodes and 
   compiles them into a text/template/parse Tree that
   is then put into pt.Main. As define is available to
   template authors, those templates should be saved
   under a pt.Subs map.
+Optimize =>
+  Iterates through the parse.Tree and produces 
+  an optimized verion by combining textual 
+  nodes.
+

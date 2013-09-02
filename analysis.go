@@ -28,7 +28,7 @@ func (pt *protoTree) doAnalyze(currentIndex, finalIndex int) {
 		case line.accept(":"):
 			for _, handler := range Filters {
 				if line.prefix(handler.Trigger) {
-					currentIndex = pt.followHandler(currentIndex+1, handler, line.indentation)
+					currentIndex = pt.followHandler(currentIndex+1, finalIndex, handler)
 					continue
 				}
 			}
@@ -53,11 +53,11 @@ func (pt *protoTree) insertDoctype(line templateLine) {
 	}
 }
 
-func (pt *protoTree) followHandler(startIndex int, handler FilterHandler, level int) int {
+func (pt *protoTree) followHandler(startIndex, finalIndex int, handler FilterHandler) int {
 	lines := make([]string, 0)
 	index := startIndex
 	base := pt.lineList[startIndex].indentation
-	for base <= pt.lineList[index].indentation {
+	for index <= finalIndex && base <= pt.lineList[index].indentation {
 		diff := base - pt.lineList[index].indentation
 		lines = append(lines, pad(diff)+pt.lineList[index].content)
 		index++

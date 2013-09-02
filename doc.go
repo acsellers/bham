@@ -23,5 +23,4 @@ var (
 	// Like the template library, you need to be able to set code delimeters
 	LeftDelim  = "{{"
 	RightDelim = "}}"
-	LineDelim  = "="
 )
