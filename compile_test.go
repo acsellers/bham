@@ -319,3 +319,23 @@ func TestCompile14(t *testing.T) {
 	})
 }
 */
+
+func TestCompile15(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `= with .Name
+  = .`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"Name": "Human Child",
+		}))
+		test.AreEqual(`Human Child`, b.String())
+	})
+}

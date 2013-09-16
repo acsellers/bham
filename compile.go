@@ -114,6 +114,29 @@ func (pt *protoTree) compileToList(arr *parse.ListNode, nodes []protoNode) {
 				pt.err = err
 			}
 
+		case identWith:
+			branching, err := parseTemplateCode(node.content)
+			if err == nil {
+				wn := &parse.WithNode{
+					parse.BranchNode{
+						NodeType: parse.NodeWith,
+						Pipe:     branching,
+						List: &parse.ListNode{
+							NodeType: parse.NodeList,
+						},
+						ElseList: &parse.ListNode{
+							NodeType: parse.NodeList,
+						},
+					},
+				}
+				if len(node.list) > 0 {
+					pt.compileToList(wn.List, node.list)
+				}
+				arr.Nodes = append(arr.Nodes, wn)
+			} else {
+				pt.err = err
+			}
+
 		default:
 			fmt.Println(node.identifier)
 			fmt.Println(node.content)
