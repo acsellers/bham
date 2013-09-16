@@ -79,3 +79,124 @@ func TestCompile3(t *testing.T) {
 		test.AreEqual(expected, b.String())
 	})
 }
+
+func TestCompile4(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `%head`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		test.AreEqual(2, len(pt.outputTree.Root.Nodes))
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		t.ExecuteTemplate(b, "compile", map[string]interface{}{})
+		test.AreEqual("<head></head>", b.String())
+
+	})
+}
+
+func TestCompile5(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `.next holla`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		test.AreEqual(3, len(pt.outputTree.Root.Nodes))
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		t.ExecuteTemplate(b, "compile", map[string]interface{}{})
+		test.AreEqual(`<div class="next"> holla </div>`, b.String())
+
+	})
+}
+
+func TestCompile6(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `#welcome Hello {{.Name}}`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"Name": "Human",
+		})
+		test.AreEqual(`<div id="welcome"> Hello Human</div>`, b.String())
+	})
+}
+
+func TestCompile7(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `#welcome
+  Hello
+  = .Name`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"Name": "Human",
+		})
+		test.AreEqual(`<div id="welcome">Hello Human</div>`, b.String())
+	})
+}
+
+func TestCompile8(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `= hello .Name`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{
+			"hello": func(s string) string {
+				return "Hello " + s
+			},
+		})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"Name": "Computer",
+		})
+		test.AreEqual(`Hello Computer`, b.String())
+	})
+}
+
+func TestCompile9(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `.name#welcome
+  Name
+  Rank
+  Serial Number`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		t.ExecuteTemplate(b, "compile", map[string]interface{}{})
+		test.AreEqual(`<div class="name" id="welcome">Name Rank Serial Number </div>`, b.String())
+	})
+}

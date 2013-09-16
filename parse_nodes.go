@@ -1,7 +1,6 @@
 package bham
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"text/scanner"
@@ -21,6 +20,38 @@ func newTextNode(text string) parse.Node {
 	return &parse.TextNode{
 		NodeType: parse.NodeText,
 		Text:     []byte(text),
+	}
+}
+
+func newMaybeTextNode(text string) []parse.Node {
+	if strings.Contains(text, LeftDelim) && strings.Contains(text, RightDelim) {
+		output := make([]parse.Node, 0)
+		workingText := text
+		for containsDelimeters(workingText) {
+			index := strings.Index(workingText, LeftDelim)
+			output = append(output, newTextNode(workingText[:index]))
+			workingText = workingText[index:]
+
+			index = strings.Index(workingText, RightDelim)
+			pipeText := workingText[:index+len(RightDelim)]
+			workingText = workingText[index+len(RightDelim):]
+
+			action, e := safeAction(pipeText)
+			if e != nil {
+				output = append(output, newTextNode(pipeText+" "))
+			} else {
+				output = append(output, action)
+			}
+		}
+
+		if workingText != "" {
+			return append(output, newTextNode(workingText+" "))
+		}
+		return output
+	} else {
+		return []parse.Node{
+			newTextNode(text + " "),
+		}
 	}
 }
 
@@ -57,7 +88,7 @@ func newFunctionNode(command string) parse.Node {
 			nodeArgs = append(nodeArgs,
 				&parse.FieldNode{
 					NodeType: parse.NodeField,
-					Ident:    strings.Split(arg, "."),
+					Ident:    strings.Split(arg[1:], "."),
 				},
 			)
 		case "$":
@@ -92,11 +123,11 @@ func newFunctionNode(command string) parse.Node {
 }
 
 func newStandaloneTag(content string) ([]parse.Node, error) {
-	_, _, err := parseTag(content)
+	td, c, err := parseTag(content)
 	if err != nil {
 		return []parse.Node{}, err
 	}
-	return []parse.Node{}, nil
+	return td.Nodes(c)
 }
 
 const (
@@ -112,13 +143,13 @@ const (
 )
 
 func parseTag(content string) (tagDescription, string, error) {
-	var s scanner.Scanner
+	var s runeScanner
 	var current, attr, value, extra string
 	td := newTagDescription()
 	state := stateTag
 	preamble, attributes := true, false
 
-	s.Init(bytes.NewBufferString(content))
+	s.Init(content)
 	tok := s.Scan()
 	for tok != scanner.EOF {
 		if preamble {
@@ -137,95 +168,109 @@ func parseTag(content string) (tagDescription, string, error) {
 				}
 			case '(':
 				td.Add(current, state)
+				current = ""
 				preamble = false
 				attributes = true
 			case ' ':
+				td.Add(current, state)
+				current = ""
 				preamble = false
 				attributes = false
+				s.Reverse()
+			case '=':
+				td.Add(current, state)
+				current = ""
+				preamble = false
+				attributes = false
+				s.Reverse()
 			default:
 				current = current + s.TokenText()
 			}
 			tok = s.Scan()
 		} else {
 			if !attributes {
-				tok = s.Scan()
 				for tok != scanner.EOF {
 					extra = extra + s.TokenText()
 					tok = s.Scan()
 				}
 				return td, extra, nil
-			}
-			switch tok {
-			case '=':
-				if state == stateValue {
-					value = value + "="
-				} else {
-					state = stateBridge
-				}
-			case '"':
-				switch s.Peek() {
-				case ')':
-					state = stateDone
-					s.Scan()
-				case ' ':
-					state = stateSpace
-				}
-			case ' ':
-				if state == stateValue {
-					value = value + " "
-				}
-			case ',':
-				switch state {
-				case stateValue:
-					value = value + ","
-				case stateAttr:
-					td.attributes[attr] = ""
-					state = stateSpace
-				}
-			case ')':
-				switch state {
-				case stateDone:
-					tok = s.Scan()
-					for tok != scanner.EOF {
-						extra = extra + s.TokenText()
-						tok = s.Scan()
+			} else {
+				switch tok {
+				case '=':
+					if state == stateValue {
+						value = value + "="
+					} else {
+						state = stateBridge
 					}
-					return td, extra, nil
-				case stateValue:
-					value = value + s.TokenText()
-				}
-			default:
-				switch state {
-				case stateAttr:
+				case '"':
 					switch s.Peek() {
-					case ' ':
-						state = stateSpace
-						td.attributes[attr] = ""
 					case ')':
 						state = stateDone
+						s.Scan()
+					case ' ':
+						state = stateSpace
+					}
+				case ' ':
+					if state == stateValue {
+						value = value + " "
+					}
+				case ',':
+					switch state {
+					case stateValue:
+						value = value + ","
+					case stateAttr:
+						td.attributes[attr] = ""
+						state = stateSpace
+					}
+				case ')':
+					switch state {
+					case stateDone:
+						tok = s.Scan()
 						for tok != scanner.EOF {
 							extra = extra + s.TokenText()
 							tok = s.Scan()
 						}
 						return td, extra, nil
-					default:
-						attr = attr + s.TokenText()
+					case stateValue:
+						value = value + s.TokenText()
 					}
-				case stateValue:
-					value = value + s.TokenText()
-				case stateSpace:
-					state = stateAttr
-				case stateBridge:
-					value = value + s.TokenText()
+				default:
+					switch state {
+					case stateAttr:
+						switch s.Peek() {
+						case ' ':
+							state = stateSpace
+							td.attributes[attr] = ""
+						case ')':
+							state = stateDone
+							for tok != scanner.EOF {
+								extra = extra + s.TokenText()
+								tok = s.Scan()
+							}
+							return td, extra, nil
+						default:
+							attr = attr + s.TokenText()
+						}
+					case stateValue:
+						value = value + s.TokenText()
+					case stateSpace:
+						state = stateAttr
+					case stateBridge:
+						value = value + s.TokenText()
+					}
 				}
 			}
 		}
+	}
+	if current != "" {
+		td.Add(current, state)
 	}
 	return td, extra, nil
 }
 
 func newTagDescription() tagDescription {
 	return tagDescription{
+		tag:        "div",
 		attributes: make(map[string]string),
 	}
 }
@@ -237,7 +282,10 @@ type tagDescription struct {
 	attributes map[string]string
 }
 
-func (td tagDescription) Add(content string, state int) {
+func (td *tagDescription) Add(content string, state int) {
+	if content == "" {
+		return
+	}
 	switch state {
 	case stateClass:
 		td.classes = append(td.classes, content)
@@ -248,9 +296,40 @@ func (td tagDescription) Add(content string, state int) {
 	}
 }
 func (td tagDescription) Opening() string {
-	return ""
+	output := fmt.Sprintf("<%s", td.tag)
+	if len(td.classes) > 0 {
+		output = output + " class=\"" + strings.Join(td.classes, " ") + "\""
+	}
+	if len(td.idParts) > 0 {
+		output = output + " id=\"" + strings.Join(td.idParts, IdJoin) + "\""
+	}
+	return output + ">"
 }
 
 func (td tagDescription) Close() string {
-	return ""
+	return fmt.Sprintf("</%s>", td.tag)
+}
+
+func (td tagDescription) Nodes(content string) ([]parse.Node, error) {
+	if content != "" {
+		if content[0] == '=' {
+			node, err := processCode(content)
+			return []parse.Node{
+				newTextNode(td.Opening()),
+				node,
+				newTextNode(td.Close()),
+			}, err
+		} else {
+			output := []parse.Node{
+				newTextNode(td.Opening()),
+			}
+			output = append(output, newMaybeTextNode(content)...)
+			return append(output, newTextNode(td.Close())), nil
+		}
+	} else {
+		return []parse.Node{
+			newTextNode(td.Opening()),
+			newTextNode(td.Close()),
+		}, nil
+	}
 }
