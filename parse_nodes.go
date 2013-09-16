@@ -55,6 +55,24 @@ func newMaybeTextNode(text string) []parse.Node {
 	}
 }
 
+func newValueNode(val string) parse.Node {
+	switch val {
+	case "true":
+		return &parse.BoolNode{
+			NodeType: parse.NodeBool,
+			True:     true,
+		}
+	case "false":
+		return &parse.BoolNode{
+			NodeType: parse.NodeBool,
+			True:     false,
+		}
+	case "nil":
+		return &parse.NilNode{}
+	}
+	panic("Can only call value node for true, false, nil")
+}
+
 func newFieldNode(field string) parse.Node {
 	if field[0] == '.' {
 		field = field[1:]
@@ -315,6 +333,12 @@ func (td tagDescription) Nodes(content string) ([]parse.Node, error) {
 		if content[0] == '=' {
 			content = strings.TrimSpace(content[1:])
 			switch {
+			case simpleValue.MatchString(content):
+				return []parse.Node{
+					newTextNode(td.Opening()),
+					newValueNode(content),
+					newTextNode(td.Close()),
+				}, nil
 			case simpleField.MatchString(content):
 				return []parse.Node{
 					newTextNode(td.Opening()),

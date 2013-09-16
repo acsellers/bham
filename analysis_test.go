@@ -83,3 +83,33 @@ func TestAnalysis3(t *testing.T) {
 		test.AreEqual("%html", pt.nodes[3].content)
 	})
 }
+
+func TestAnalysis4(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		pt := &protoTree{
+			name: "example.html",
+			source: `!!!
+= if .HTML
+  %html
+    %head
+      %title Test`,
+		}
+		pt.lex()
+		test.IsNil(pt.err)
+		if pt.err == nil {
+			test.AreEqual(5, len(pt.lineList))
+			pt.analyze()
+			test.IsNil(pt.err)
+			test.AreEqual(2, len(pt.nodes))
+			test.AreEqual("<!DOCTYPE html>", pt.nodes[0].content)
+			test.AreEqual(".HTML", pt.nodes[1].content)
+			test.AreEqual(identIf, pt.nodes[1].identifier)
+			test.AreEqual(5, len(pt.nodes[1].list))
+			test.AreEqual("%html", pt.nodes[1].list[0].content)
+			test.AreEqual("%head", pt.nodes[1].list[1].content)
+			test.AreEqual("%title Test", pt.nodes[1].list[2].content)
+			test.AreEqual("%head", pt.nodes[1].list[3].content)
+			test.AreEqual("%html", pt.nodes[1].list[4].content)
+		}
+	})
+}

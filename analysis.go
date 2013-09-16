@@ -83,7 +83,7 @@ func (pt *protoTree) actionableLine(startIndex, finalIndex int) int {
 	currentIndex := startIndex + 1
 	var endIndex int
 	if pt.lineList[startIndex].blockParameter() {
-		for pt.lineList[startIndex].indentation < pt.lineList[currentIndex].indentation && currentIndex < finalIndex {
+		for currentIndex <= finalIndex && pt.lineList[startIndex].indentation < pt.lineList[currentIndex].indentation {
 			currentIndex++
 		}
 		parentNodes := pt.currNodes
@@ -91,7 +91,7 @@ func (pt *protoTree) actionableLine(startIndex, finalIndex int) int {
 		pt.doAnalyze(startIndex+1, currentIndex-1)
 		primaryNodes, secondaryNodes := pt.currNodes, []protoNode{}
 
-		if pt.lineList[startIndex].mightHaveElse() {
+		if pt.lineList[startIndex].mightHaveElse() && currentIndex < finalIndex {
 			if pt.lineList[currentIndex].isElse() {
 				endIndex = currentIndex
 				currentIndex++
