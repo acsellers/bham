@@ -298,11 +298,10 @@ func TestCompile13(t *testing.T) {
 	})
 }
 
-/*
 func TestCompile14(t *testing.T) {
 	assert.Within(t, func(test *assert.Test) {
 		tmpl := `= range .List
-  .
+  %title= .
 = else
   no items`
 		pt := &protoTree{name: "compile", source: tmpl}
@@ -314,11 +313,24 @@ func TestCompile14(t *testing.T) {
 		t := template.New("wat").Funcs(map[string]interface{}{})
 		t.AddParseTree("compile", pt.outputTree)
 		b := new(bytes.Buffer)
-		test.IsNil(t.ExecuteTemplate(b, "compile", nil))
-		test.AreEqual(`Hello `, b.String())
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"List": []string{},
+		}))
+		test.AreEqual(`no items `, b.String())
+
+		b.Reset()
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"List": []string{"first"},
+		}))
+		test.AreEqual(`<title>first</title>`, b.String())
+
+		b.Reset()
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"List": []string{"first", "second"},
+		}))
+		test.AreEqual(`<title>first</title><title>second</title>`, b.String())
 	})
 }
-*/
 
 func TestCompile15(t *testing.T) {
 	assert.Within(t, func(test *assert.Test) {
