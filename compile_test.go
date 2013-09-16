@@ -200,3 +200,26 @@ func TestCompile9(t *testing.T) {
 		test.AreEqual(`<div class="name" id="welcome">Name Rank Serial Number </div>`, b.String())
 	})
 }
+
+func TestCompile10(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `%head= hello .Name`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{
+			"hello": func(s string) string {
+				return "Hello " + s
+			},
+		})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"Name": "Computer",
+		}))
+		test.AreEqual(`<head>Hello Computer</head>`, b.String())
+	})
+}

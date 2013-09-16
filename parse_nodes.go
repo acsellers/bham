@@ -313,12 +313,28 @@ func (td tagDescription) Close() string {
 func (td tagDescription) Nodes(content string) ([]parse.Node, error) {
 	if content != "" {
 		if content[0] == '=' {
-			node, err := processCode(content)
-			return []parse.Node{
-				newTextNode(td.Opening()),
-				node,
-				newTextNode(td.Close()),
-			}, err
+			content = strings.TrimSpace(content[1:])
+			switch {
+			case simpleField.MatchString(content):
+				return []parse.Node{
+					newTextNode(td.Opening()),
+					newFieldNode(content),
+					newTextNode(td.Close()),
+				}, nil
+			case simpleFunction.MatchString(content):
+				return []parse.Node{
+					newTextNode(td.Opening()),
+					newFunctionNode(content),
+					newTextNode(td.Close()),
+				}, nil
+			default:
+				node, err := processCode(content)
+				return []parse.Node{
+					newTextNode(td.Opening()),
+					node,
+					newTextNode(td.Close()),
+				}, err
+			}
 		} else {
 			output := []parse.Node{
 				newTextNode(td.Opening()),
