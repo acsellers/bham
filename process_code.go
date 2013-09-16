@@ -3,13 +3,75 @@ package bham
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template/parse"
 	"unicode"
 )
 
-func processCode(s string) (*parse.ActionNode, error) {
+var (
+	dotVarField = `([\.|\$][^\t^\n^\v^\f^\r^ ]+)+`
+
+	simpleValue    = regexp.MustCompile(`true|false|nil`)
+	simpleField    = regexp.MustCompile(fmt.Sprintf(`^%s$`, dotVarField))
+	simpleFunction = regexp.MustCompile(fmt.Sprintf(`^([^\.^\t^\n^\v^\f^\r^ ]+)( %s)*$`, dotVarField))
+)
+
+func parseTemplateCode(content string) (*parse.PipeNode, error) {
+	switch {
+	case content == ".":
+		return &parse.PipeNode{
+			NodeType: parse.NodePipe,
+			Cmds: []*parse.CommandNode{
+				&parse.CommandNode{
+					NodeType: parse.NodeCommand,
+					Args: []parse.Node{
+						&parse.DotNode{},
+					},
+				},
+			},
+		}, nil
+	case simpleValue.MatchString(content):
+		return &parse.PipeNode{
+			NodeType: parse.NodePipe,
+			Cmds: []*parse.CommandNode{
+				&parse.CommandNode{
+					NodeType: parse.NodeCommand,
+					Args: []parse.Node{
+						newValueNode(content),
+					},
+				},
+			},
+		}, nil
+	case simpleField.MatchString(content):
+		return &parse.PipeNode{
+			NodeType: parse.NodePipe,
+			Cmds: []*parse.CommandNode{
+				&parse.CommandNode{
+					NodeType: parse.NodeCommand,
+					Args: []parse.Node{
+						newBareFieldNode(content),
+					},
+				},
+			},
+		}, nil
+	case simpleFunction.MatchString(content):
+		return &parse.PipeNode{
+			NodeType: parse.NodePipe,
+			Cmds: []*parse.CommandNode{
+				&parse.CommandNode{
+					NodeType: parse.NodeCommand,
+					Args:     newBareFunctionNode(content),
+				},
+			},
+		}, nil
+	default:
+		return processCode(content)
+	}
+}
+
+func processCode(s string) (*parse.PipeNode, error) {
 	var chars []rune
 	for _, char := range s {
 		chars = append(chars, char)
@@ -112,12 +174,9 @@ func processCode(s string) (*parse.ActionNode, error) {
 		return nil, fmt.Errorf("Parse was not able to complete")
 	}
 
-	return &parse.ActionNode{
-		NodeType: parse.NodeAction,
-		Pipe: &parse.PipeNode{
-			NodeType: parse.NodePipe,
-			Cmds:     nodes,
-		},
+	return &parse.PipeNode{
+		NodeType: parse.NodePipe,
+		Cmds:     nodes,
 	}, nil
 }
 

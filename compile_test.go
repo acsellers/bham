@@ -44,7 +44,7 @@ func TestCompile2(t *testing.T) {
 		t := template.New("wat").Funcs(map[string]interface{}{})
 		t.AddParseTree("compile", pt.outputTree)
 		b := new(bytes.Buffer)
-		t.ExecuteTemplate(b, "compile", map[string]interface{}{"Name": "Hello"})
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{"Name": "Hello"}))
 		test.AreEqual("<!DOCTYPE html>Hello", b.String())
 	})
 }
@@ -261,3 +261,61 @@ func TestCompile12(t *testing.T) {
 		test.AreEqual(`Hello `, b.String())
 	})
 }
+
+func TestCompile13(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `= range .List
+  .name= .
+
+%head
+  %title Hax`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+
+		b := new(bytes.Buffer)
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"List": []string{},
+		}))
+		test.AreEqual(`<head><title> Hax </title></head>`, b.String())
+
+		b.Reset()
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"List": []string{"first"},
+		}))
+		test.AreEqual(`<div class="name">first</div><head><title> Hax </title></head>`, b.String())
+
+		b.Reset()
+		test.IsNil(t.ExecuteTemplate(b, "compile", map[string]interface{}{
+			"List": []string{"first", "second"},
+		}))
+		test.AreEqual(`<div class="name">first</div><div class="name">second</div><head><title> Hax </title></head>`, b.String())
+	})
+}
+
+/*
+func TestCompile14(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		tmpl := `= range .List
+  .
+= else
+  no items`
+		pt := &protoTree{name: "compile", source: tmpl}
+		pt.lex()
+		pt.analyze()
+		pt.compile()
+		test.IsNotNil(pt.outputTree)
+		test.IsNil(pt.err)
+		t := template.New("wat").Funcs(map[string]interface{}{})
+		t.AddParseTree("compile", pt.outputTree)
+		b := new(bytes.Buffer)
+		test.IsNil(t.ExecuteTemplate(b, "compile", nil))
+		test.AreEqual(`Hello `, b.String())
+	})
+}
+*/

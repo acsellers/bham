@@ -101,6 +101,7 @@ func (pt *protoTree) actionableLine(startIndex, finalIndex int) int {
 				pt.currNodes = []protoNode{}
 				pt.doAnalyze(endIndex+1, currentIndex)
 				secondaryNodes = pt.currNodes
+				currentIndex++
 			}
 		}
 		pt.currNodes = parentNodes
@@ -133,7 +134,6 @@ func (pt *protoTree) actionableLine(startIndex, finalIndex int) int {
 				primaryNodes,
 			)
 		}
-		currentIndex++
 	} else {
 		pt.insertExecutable(
 			pt.lineList[startIndex].after("-=").String(),

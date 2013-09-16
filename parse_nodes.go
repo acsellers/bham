@@ -74,9 +74,6 @@ func newValueNode(val string) parse.Node {
 }
 
 func newFieldNode(field string) parse.Node {
-	if field[0] == '.' {
-		field = field[1:]
-	}
 
 	return &parse.ActionNode{
 		NodeType: parse.NodeAction,
@@ -86,18 +83,39 @@ func newFieldNode(field string) parse.Node {
 				&parse.CommandNode{
 					NodeType: parse.NodeCommand,
 					Args: []parse.Node{
-						&parse.FieldNode{
-							NodeType: parse.NodeField,
-							Ident:    strings.Split(field, "."),
-						},
+						newBareFieldNode(field),
 					},
 				},
 			},
 		},
 	}
 }
+func newBareFieldNode(field string) *parse.FieldNode {
+	if field[0] == '.' {
+		field = field[1:]
+	}
+
+	return &parse.FieldNode{
+		NodeType: parse.NodeField,
+		Ident:    strings.Split(field, "."),
+	}
+}
 
 func newFunctionNode(command string) parse.Node {
+	return &parse.ActionNode{
+		NodeType: parse.NodeAction,
+		Pipe: &parse.PipeNode{
+			NodeType: parse.NodePipe,
+			Cmds: []*parse.CommandNode{
+				&parse.CommandNode{
+					NodeType: parse.NodeCommand,
+					Args:     newBareFunctionNode(command),
+				},
+			},
+		},
+	}
+}
+func newBareFunctionNode(command string) []parse.Node {
 	args := strings.Split(command, " ")
 	nodeArgs := []parse.Node{}
 	for _, arg := range args {
@@ -126,18 +144,7 @@ func newFunctionNode(command string) parse.Node {
 		}
 	}
 
-	return &parse.ActionNode{
-		NodeType: parse.NodeAction,
-		Pipe: &parse.PipeNode{
-			NodeType: parse.NodePipe,
-			Cmds: []*parse.CommandNode{
-				&parse.CommandNode{
-					NodeType: parse.NodeCommand,
-					Args:     nodeArgs,
-				},
-			},
-		},
-	}
+	return nodeArgs
 }
 
 func newStandaloneTag(content string) ([]parse.Node, error) {
@@ -332,33 +339,15 @@ func (td tagDescription) Nodes(content string) ([]parse.Node, error) {
 	if content != "" {
 		if content[0] == '=' {
 			content = strings.TrimSpace(content[1:])
-			switch {
-			case simpleValue.MatchString(content):
-				return []parse.Node{
-					newTextNode(td.Opening()),
-					newValueNode(content),
-					newTextNode(td.Close()),
-				}, nil
-			case simpleField.MatchString(content):
-				return []parse.Node{
-					newTextNode(td.Opening()),
-					newFieldNode(content),
-					newTextNode(td.Close()),
-				}, nil
-			case simpleFunction.MatchString(content):
-				return []parse.Node{
-					newTextNode(td.Opening()),
-					newFunctionNode(content),
-					newTextNode(td.Close()),
-				}, nil
-			default:
-				node, err := processCode(content)
-				return []parse.Node{
-					newTextNode(td.Opening()),
-					node,
-					newTextNode(td.Close()),
-				}, err
-			}
+			node, err := parseTemplateCode(content)
+			return []parse.Node{
+				newTextNode(td.Opening()),
+				&parse.ActionNode{
+					NodeType: parse.NodeAction,
+					Pipe:     node,
+				},
+				newTextNode(td.Close()),
+			}, err
 		} else {
 			output := []parse.Node{
 				newTextNode(td.Opening()),
