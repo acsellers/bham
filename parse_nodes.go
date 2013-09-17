@@ -3,7 +3,6 @@ package bham
 import (
 	"fmt"
 	"strings"
-	"text/scanner"
 	"text/template/parse"
 )
 
@@ -175,135 +174,127 @@ const (
 )
 
 func parseTag(content string) (tagDescription, string, error) {
-	var s runeScanner
-	var current, attr, value, extra string
+	chars := []rune{}
 	td := newTagDescription()
-	state := stateTag
-	preamble, attributes := true, false
-
-	s.Init(content)
-	tok := s.Scan()
-	for tok != scanner.EOF {
-		if preamble {
-			switch tok {
-			case '.':
-				td.Add(current, state)
-				state = stateClass
-				current = ""
-			case '#':
-				td.Add(current, state)
-				state = stateId
-				current = ""
-			case '%':
-				if state != stateTag || current != "" {
-					return td, "", fmt.Errorf("Tags must start the element declaration")
-				}
-			case '(':
-				td.Add(current, state)
-				current = ""
-				preamble = false
-				attributes = true
-			case ' ':
-				td.Add(current, state)
-				current = ""
-				preamble = false
-				attributes = false
-				s.Reverse()
-			case '=':
-				td.Add(current, state)
-				current = ""
-				preamble = false
-				attributes = false
-				s.Reverse()
-			default:
-				current = current + s.TokenText()
-			}
-			tok = s.Scan()
+	var current, state int
+	for _, char := range content {
+		chars = append(chars, char)
+	}
+	var value string
+	limit := len(chars)
+	{
+		switch chars[current] {
+		case '.':
+			current++
+			state = stateClass
+			goto preamble_consume
+		case '#':
+			current++
+			state = stateId
+			goto preamble_consume
+		case '%':
+			current++
+			state = stateTag
+			goto preamble_consume
+		}
+	preamble_choose:
+		if current == limit {
+			value = ""
+			goto ending
 		} else {
-			if !attributes {
-				for tok != scanner.EOF {
-					extra = extra + s.TokenText()
-					tok = s.Scan()
-				}
-				return td, extra, nil
-			} else {
-				switch tok {
-				case '=':
-					if state == stateValue {
-						value = value + "="
-					} else {
-						state = stateBridge
-					}
-				case '"':
-					switch s.Peek() {
-					case ')':
-						state = stateDone
-						s.Scan()
-					case ' ':
-						state = stateSpace
-					}
-				case ' ':
-					if state == stateValue {
-						value = value + " "
-					}
-				case ',':
-					switch state {
-					case stateValue:
-						value = value + ","
-					case stateAttr:
-						td.attributes[attr] = ""
-						state = stateSpace
-					}
-				case ')':
-					switch state {
-					case stateDone:
-						tok = s.Scan()
-						for tok != scanner.EOF {
-							extra = extra + s.TokenText()
-							tok = s.Scan()
-						}
-						return td, extra, nil
-					case stateValue:
-						value = value + s.TokenText()
-					}
-				default:
-					switch state {
-					case stateAttr:
-						switch s.Peek() {
-						case ' ':
-							state = stateSpace
-							td.attributes[attr] = ""
-						case ')':
-							state = stateDone
-							for tok != scanner.EOF {
-								extra = extra + s.TokenText()
-								tok = s.Scan()
-							}
-							return td, extra, nil
-						default:
-							attr = attr + s.TokenText()
-						}
-					case stateValue:
-						value = value + s.TokenText()
-					case stateSpace:
-						state = stateAttr
-					case stateBridge:
-						value = value + s.TokenText()
-					}
-				}
+			switch chars[current] {
+			case '.':
+				current++
+				state = stateClass
+			case '#':
+				current++
+				state = stateId
+			case '(':
+				current++
+				state = stateAttr
+				goto attr_consume
+			case '=', '-', ' ':
+				goto extra_consume
 			}
 		}
-	}
-	if current != "" {
-		td.Add(current, state)
-	}
-	return td, extra, nil
-}
+	preamble_consume:
+		for current < limit {
+			switch chars[current] {
+			case '.', '#':
+				td.Add(value, state)
+				value = ""
+				goto preamble_choose
+			case '(':
+				current++
+				td.Add(value, state)
+				value = ""
+				goto attr_consume
+			case '-', '=', ' ':
+				td.Add(value, state)
+				value = ""
+				goto extra_consume
+			default:
+				value = value + string(chars[current])
+			}
+			current++
+		}
+		td.Add(value, state)
+		value = ""
+		goto ending
+	attr_consume:
+		for current < limit {
+			switch chars[current] {
+			case ' ':
+				td.attributes = append(td.attributes, value)
+				value = ""
+			case '=':
+				value = value + "="
+				current++
+				goto value_consume
+			case ')':
+				if value != "" {
+					td.attributes = append(td.attributes, value)
+				}
+				current++
+				value = ""
+				goto extra_consume
+			default:
+				value = value + string(chars[current])
+			}
+			current++
+		}
+		return td, "", fmt.Errorf("Unterminated attributes for %s", content)
+	value_consume:
+		if current < limit && chars[current] == '"' {
+			value = value + "\""
+			current++
 
+			for current < limit {
+				if chars[current] == '"' {
+					td.attributes = append(td.attributes, value+"\"")
+					value = ""
+					current++
+					goto attr_consume
+				} else {
+					value = value + string(chars[current])
+				}
+				current++
+			}
+			return td, "", fmt.Errorf("HTML attribute values must have closing quotation marks for %s", content)
+		}
+		return td, "", fmt.Errorf("HTML attribute values must have quotation marks for %s", content)
+	extra_consume:
+		for current < limit {
+			value = value + string(chars[current])
+			current++
+		}
+	ending:
+		return td, value, nil
+	}
+}
 func newTagDescription() tagDescription {
 	return tagDescription{
-		tag:        "div",
-		attributes: make(map[string]string),
+		tag: "div",
 	}
 }
 
@@ -311,7 +302,7 @@ type tagDescription struct {
 	tag        string
 	classes    []string
 	idParts    []string
-	attributes map[string]string
+	attributes []string
 }
 
 func (td *tagDescription) Add(content string, state int) {
@@ -329,6 +320,9 @@ func (td *tagDescription) Add(content string, state int) {
 }
 func (td tagDescription) Opening() string {
 	output := fmt.Sprintf("<%s", td.tag)
+	if len(td.attributes) > 0 {
+		output = output + " " + strings.Join(td.attributes, " ")
+	}
 	if len(td.classes) > 0 {
 		output = output + " class=\"" + strings.Join(td.classes, " ") + "\""
 	}
