@@ -45,13 +45,19 @@ func parseTemplateCode(content string) (*parse.PipeNode, error) {
 			},
 		}, nil
 	case simpleField.MatchString(content):
+		var arg parse.Node
+		if content[0] == '$' {
+			arg = newBareVariableNode(content)
+		} else {
+			arg = newBareFieldNode(content)
+		}
 		return &parse.PipeNode{
 			NodeType: parse.NodePipe,
 			Cmds: []*parse.CommandNode{
 				&parse.CommandNode{
 					NodeType: parse.NodeCommand,
 					Args: []parse.Node{
-						newBareFieldNode(content),
+						arg,
 					},
 				},
 			},
@@ -84,6 +90,7 @@ func processCode(s string) (*parse.PipeNode, error) {
 	var args []string
 	var nodeArgs []parse.Node
 	var nodes []*parse.CommandNode
+	declNodes := []*parse.VariableNode{}
 
 	{
 	begin_command:
@@ -138,8 +145,28 @@ func processCode(s string) (*parse.PipeNode, error) {
 		if chars[current] == '|' {
 			goto push_func
 		} else {
-			goto func_arg
+			if chars[current] == ':' && chars[current+1] == '=' {
+				current = current + 2
+				goto convert_to_assignment
+			} else {
+				goto func_arg
+			}
 		}
+	convert_to_assignment:
+		declNodes = append(declNodes, &parse.VariableNode{
+			NodeType: parse.NodeVariable,
+			Ident:    strings.Split(funcName, "."),
+		})
+		funcName = ""
+		for _, arg := range args {
+			declNodes = append(declNodes, &parse.VariableNode{
+				NodeType: parse.NodeVariable,
+				Ident:    strings.Split(arg, "."),
+			})
+		}
+		args = []string{}
+
+		goto begin_command
 
 	complete:
 		continuing = false
@@ -176,6 +203,7 @@ func processCode(s string) (*parse.PipeNode, error) {
 
 	return &parse.PipeNode{
 		NodeType: parse.NodePipe,
+		Decl:     declNodes,
 		Cmds:     nodes,
 	}, nil
 }

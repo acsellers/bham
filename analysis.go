@@ -139,7 +139,6 @@ func (pt *protoTree) actionableLine(startIndex, finalIndex int) int {
 			pt.lineList[startIndex].after("-=").String(),
 			pt.lineList[startIndex].indentation,
 		)
-		currentIndex++
 	}
 
 	return currentIndex

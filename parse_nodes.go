@@ -101,6 +101,13 @@ func newBareFieldNode(field string) *parse.FieldNode {
 	}
 }
 
+func newBareVariableNode(field string) *parse.VariableNode {
+	return &parse.VariableNode{
+		NodeType: parse.NodeVariable,
+		Ident:    strings.Split(field, "."),
+	}
+}
+
 func newFunctionNode(command string) parse.Node {
 	return &parse.ActionNode{
 		NodeType: parse.NodeAction,
