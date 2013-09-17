@@ -173,11 +173,30 @@ func processCode(s string) (*parse.PipeNode, error) {
 
 	push_func:
 		nodeArgs = []parse.Node{}
-		nodeArgs = append(nodeArgs,
-			&parse.IdentifierNode{
-				NodeType: parse.NodeIdentifier,
-				Ident:    funcName,
-			})
+		switch funcName[0] {
+		case '.':
+			if len(funcName) > 1 {
+				nodeArgs = append(nodeArgs,
+					&parse.FieldNode{
+						NodeType: parse.NodeField,
+						Ident:    strings.Split(funcName[1:], "."),
+					})
+			} else {
+				nodeArgs = append(nodeArgs, &parse.DotNode{})
+			}
+		case '$':
+			nodeArgs = append(nodeArgs,
+				&parse.VariableNode{
+					NodeType: parse.NodeVariable,
+					Ident:    strings.Split(funcName, "."),
+				})
+		default:
+			nodeArgs = append(nodeArgs,
+				&parse.IdentifierNode{
+					NodeType: parse.NodeIdentifier,
+					Ident:    funcName,
+				})
+		}
 		for _, arg := range args {
 			nodeArgs = append(nodeArgs, parseFuncArg(arg))
 		}
