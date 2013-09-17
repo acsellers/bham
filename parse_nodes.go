@@ -356,20 +356,17 @@ func (td tagDescription) Nodes(content string) ([]parse.Node, error) {
 		if content[0] == '=' {
 			content = strings.TrimSpace(content[1:])
 			node, err := parseTemplateCode(content)
-			return []parse.Node{
-				newTextNode(td.Opening()),
+			return append(append(newMaybeTextNode(td.Opening()),
 				&parse.ActionNode{
 					NodeType: parse.NodeAction,
 					Pipe:     node,
-				},
-				newTextNode(td.Close()),
-			}, err
+				}),
+				newMaybeTextNode(td.Close())...,
+			), err
 		} else {
-			output := []parse.Node{
-				newTextNode(td.Opening()),
-			}
+			output := newMaybeTextNode(td.Opening())
 			output = append(output, newMaybeTextNode(content)...)
-			return append(output, newTextNode(td.Close())), nil
+			return append(output, newMaybeTextNode(td.Close())...), nil
 		}
 	} else {
 		return []parse.Node{
