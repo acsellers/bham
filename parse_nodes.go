@@ -322,16 +322,19 @@ func (td tagDescription) Opening() string {
 	output := fmt.Sprintf("<%s", td.tag)
 	if len(td.attributes) > 0 {
 		for _, attr := range td.attributes {
-			if strings.HasPrefix(attr, "class") {
-				if len(td.classes) > 0 {
-					output = output +
-						" class=\"" +
-						strings.Join(td.classes, " ") +
-						" " + attr[7:]
-					td.classes = []string{}
-				}
+			if len(td.classes) > 0 && strings.HasPrefix(attr, "class") {
+				output = output +
+					" class=\"" +
+					strings.Join(td.classes, " ") +
+					" " + attr[7:]
+				td.classes = []string{}
 			} else {
-				output = output + " " + attr
+				if len(td.idParts) > 0 && strings.HasPrefix(attr, "id=") {
+					output = output + " id=\"" + strings.Join(td.idParts, "_") + "_" + attr[4:]
+					td.idParts = []string{}
+				} else {
+					output = output + " " + attr
+				}
 			}
 		}
 	}
