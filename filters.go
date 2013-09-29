@@ -7,6 +7,12 @@ var Filters = []FilterHandler{
 		Close:   "</script>",
 		Handler: Transformer(func(s string) string { return s }),
 	},
+	FilterHandler{
+		Trigger: ":css",
+		Open:    `<style>`,
+		Close:   "</style>",
+		Handler: Transformer(func(s string) string { return s }),
+	},
 }
 
 type FilterHandler struct {

@@ -27,9 +27,10 @@ func (pt *protoTree) doAnalyze(currentIndex, finalIndex int) {
 			continue
 		case line.accept(":"):
 			for _, handler := range Filters {
-				if line.prefix(handler.Trigger) {
+				if line.content == handler.Trigger {
 					currentIndex = pt.followHandler(currentIndex+1, finalIndex, handler)
-					continue
+					fmt.Println("handler is ", handler.Trigger)
+					return
 				}
 			}
 			pt.err = fmt.Errorf("Bad handler: %s", line.content)
@@ -159,8 +160,11 @@ func (pt *protoTree) tagLike(currentIndex, finalIndex int) int {
 			content:    pt.lineList[currentIndex].content,
 		})
 		tagIndex := currentIndex + 1
-		for tagIndex < finalIndex && pt.lineList[tagIndex].indentation >= pt.lineList[currentIndex].indentation {
+		for tagIndex < finalIndex && pt.lineList[tagIndex].indentation > pt.lineList[currentIndex].indentation {
 			tagIndex++
+		}
+		if pt.lineList[tagIndex].indentation <= pt.lineList[currentIndex].indentation {
+			tagIndex--
 		}
 		pt.doAnalyze(currentIndex+1, tagIndex)
 		pt.currNodes = append(pt.currNodes, protoNode{

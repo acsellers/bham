@@ -16,7 +16,7 @@ func TestParse(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, nil)
-		test.AreEqual("<html><head><title>wat</title></head></html>", b.String())
+		test.AreEqual("<html><head><title>  wat </title> </head></html>", b.String())
 	})
 }
 
@@ -30,7 +30,7 @@ func TestParse2(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, nil)
-		test.AreEqual("<html><head><title>wat</title></head></html>", b.String())
+		test.AreEqual("<html><head><title>wat </title></head></html>", b.String())
 	})
 }
 
@@ -52,11 +52,11 @@ func TestParseIf(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"ShowWat": true})
-		test.AreEqual("<html><head><title>wat</title></head><body><div id=\"content\"> moo</div></body></html>", b.String())
+		test.AreEqual("<html><head><title>  wat </title> </head><body><div id=\"content\">moo </div></body></html>", b.String())
 
 		b.Reset()
 		t.Execute(b, map[string]interface{}{"ShowWat": false})
-		test.AreEqual("<html><head></head><body><div id=\"content\"> moo</div></body></html>", b.String())
+		test.AreEqual("<html><head></head><body><div id=\"content\">moo </div></body></html>", b.String())
 	})
 }
 
@@ -70,11 +70,11 @@ func TestParseIfElse(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"ShowWat": true})
-		test.AreEqual("<html><head><title>wat</title></head></html>", b.String())
+		test.AreEqual("<html><head><title>  wat </title> </head></html>", b.String())
 
 		b.Reset()
 		t.Execute(b, map[string]interface{}{"ShowWat": false})
-		test.AreEqual("<html><head><title>taw</title></head></html>", b.String())
+		test.AreEqual("<html><head><title>  taw </title> </head></html>", b.String())
 	})
 }
 
@@ -88,7 +88,7 @@ func TestParseRange(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"Wats": []int{1, 2}})
-		test.AreEqual("<html><body><p>wat</p><p>wat</p></body></html>", b.String())
+		test.AreEqual("<html><body><p>  wat </p> <p>  wat </p> </body></html>", b.String())
 
 		b.Reset()
 		t.Execute(b, map[string]interface{}{"Wats": []int{}})
@@ -106,25 +106,28 @@ func TestParseRangeElse(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"Wats": []int{1, 2}})
-		test.AreEqual("<html><body><p>wat</p><p>wat</p></body></html>", b.String())
+		test.AreEqual("<html><body><p>  wat </p> <p>  wat </p> </body></html>", b.String())
 
 		b.Reset()
 		t.Execute(b, map[string]interface{}{"Wats": []int{}})
-		test.AreEqual("<html><body><p>no wat</p></body></html>", b.String())
+		test.AreEqual("<html><body><p>  no wat </p> </body></html>", b.String())
 	})
 }
 
 func TestTextPassthrough(t *testing.T) {
 	within(t, func(test *aTest) {
 		t := template.New("test").Funcs(map[string]interface{}{})
-		tree, err := Parse("test.bham", "<!DOCTYPE html>\n%html\n\t%body Test Line\n\t\tTest other line")
+		tree, err := Parse("test.bham", `<!DOCTYPE html>
+%html
+  %body Test Line
+    Test other line`)
 		test.IsNil(err)
 		t, err = t.AddParseTree("tree", tree["test"])
 		test.IsNil(err)
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"Wats": []int{1, 2}})
-		test.AreEqual("<!DOCTYPE html><html><body>Test Line Test other line</body></html>", b.String())
+		test.AreEqual("<!DOCTYPE html> <html><body> Test Line Test other line </body></html>", b.String())
 	})
 }
 
@@ -138,7 +141,7 @@ func TestOutput(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"Name": "Andrew"})
-		test.AreEqual("<!DOCTYPE html><html><body>Andrew</body></html>", b.String())
+		test.AreEqual("<!DOCTYPE html> <html><body>Andrew</body></html>", b.String())
 	})
 }
 
@@ -169,7 +172,7 @@ func TestAttribute(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"Name": "Andrew"})
-		test.AreEqual("<!DOCTYPE html><html ng-app><body ng-controller=\"PageController\"></body></html>", b.String())
+		test.AreEqual("<!DOCTYPE html> <html ng-app><body ng-controller=\"PageController\"></body></html>", b.String())
 	})
 }
 
@@ -226,7 +229,7 @@ func TestWith(t *testing.T) {
 		test.IsNil(err)
 
 		b := new(bytes.Buffer)
-		t.Execute(b, nil)
+		test.IsNil(t.Execute(b, nil))
 
 		test.AreEqual("<html>Killer</html>", b.String())
 	})
@@ -257,11 +260,32 @@ func TestEmbedded(t *testing.T) {
 
 		b := new(bytes.Buffer)
 		t.Execute(b, map[string]interface{}{"Name": "Andrew Sellers", "Class": "big"})
-		test.AreEqual("<html>Andrew Sellers<head><title class=\"big\">wat</title></head></html>", b.String())
+		test.AreEqual("<html> Andrew Sellers<head><title class=\"big\">  wat </title> </head></html>", b.String())
 	})
 }
 
 func TestFilter(t *testing.T) {
+	tmplContent := `%html
+  :javascript
+    var name = "Andrew";
+`
+
+	within(t, func(test *aTest) {
+		t := template.New("test").Funcs(map[string]interface{}{})
+		tree, err := Parse("test.bham", tmplContent)
+		test.IsNil(err)
+		t, err = t.AddParseTree("tree", tree["test"])
+		test.IsNil(err)
+
+		b := new(bytes.Buffer)
+		t.Execute(b, map[string]interface{}{"Name": "Andrew", "Class": "big"})
+		test.AreEqual("<html><script type=\"text/javascript\">var name = \"Andrew\";</script></html>", b.String())
+
+	})
+}
+
+/*
+func TestFilter2(t *testing.T) {
 	tmplContent := `%html
   :javascript
     var name = "{{ .Name | js }}";
@@ -280,3 +304,4 @@ func TestFilter(t *testing.T) {
 
 	})
 }
+*/

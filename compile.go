@@ -47,9 +47,12 @@ func (pt *protoTree) compileToList(arr *parse.ListNode, nodes []protoNode) {
 				pt.err = err
 			}
 		case identTagOpen:
-			td, _, err := parseTag(node.content)
+			td, c, err := parseTag(node.content)
 			if err == nil {
 				arr.Nodes = append(arr.Nodes, newTextNode(td.Opening()))
+				if c != "" {
+					arr.Nodes = append(arr.Nodes, newMaybeTextNode(c)...)
+				}
 			} else {
 				pt.err = err
 			}

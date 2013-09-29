@@ -17,7 +17,7 @@ const (
   %a(href="http://github.com/robfig/revel")
     Revel Framework
 `
-	result = `<!DOCTYPE html><html>Created with the<a href="http://github.com/robfig/revel">Revel Framework</a></html>`
+	result = `<!DOCTYPE html> <html>Created with the <a href="http://github.com/robfig/revel">Revel Framework </a></html>`
 )
 
 func TestLarge(t *testing.T) {

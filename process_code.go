@@ -190,6 +190,14 @@ func processCode(s string) (*parse.PipeNode, error) {
 					NodeType: parse.NodeVariable,
 					Ident:    strings.Split(funcName, "."),
 				})
+		case '"':
+			nodeArgs = append(nodeArgs,
+				&parse.StringNode{
+					NodeType: parse.NodeString,
+					Quoted:   funcName,
+					Text:     funcName[1 : len(funcName)-1],
+				},
+			)
 		default:
 			nodeArgs = append(nodeArgs,
 				&parse.IdentifierNode{

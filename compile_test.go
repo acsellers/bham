@@ -226,8 +226,10 @@ func TestCompile10(t *testing.T) {
 
 func TestCompile11(t *testing.T) {
 	assert.Within(t, func(test *assert.Test) {
-		tmpl := `= if true
-  Hello`
+		tmpl := `%first
+  = if true
+    %now Hello
+%end`
 		pt := &protoTree{name: "compile", source: tmpl}
 		pt.lex()
 		pt.analyze()
@@ -238,7 +240,7 @@ func TestCompile11(t *testing.T) {
 		t.AddParseTree("compile", pt.outputTree)
 		b := new(bytes.Buffer)
 		test.IsNil(t.ExecuteTemplate(b, "compile", nil))
-		test.AreEqual(`Hello `, b.String())
+		test.AreEqual(`<first><now>  Hello </now> </first><end></end>`, b.String())
 	})
 }
 

@@ -159,3 +159,31 @@ func TestAnalysis6(t *testing.T) {
 		}
 	})
 }
+
+func TestAnalysis7(t *testing.T) {
+	assert.Within(t, func(test *assert.Test) {
+		pt := &protoTree{
+			name: "example.html",
+			source: `%first
+  = if true
+    %now Hello
+%end`,
+		}
+		pt.lex()
+		test.IsNil(pt.err)
+		if pt.err == nil {
+			test.AreEqual(4, len(pt.lineList))
+			test.AreEqual(1, pt.lineList[1].indentation)
+			test.AreEqual(2, pt.lineList[2].indentation)
+			test.AreEqual(0, pt.lineList[3].indentation)
+			pt.analyze()
+			test.IsNil(pt.err)
+			test.AreEqual(4, len(pt.nodes))
+			test.AreEqual("%first", pt.nodes[0].content)
+			test.AreEqual("true", pt.nodes[1].content)
+			test.AreEqual(1, len(pt.nodes[1].list))
+			test.AreEqual("%first", pt.nodes[2].content)
+			test.AreEqual("%end", pt.nodes[3].content)
+		}
+	})
+}
