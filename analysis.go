@@ -29,7 +29,6 @@ func (pt *protoTree) doAnalyze(currentIndex, finalIndex int) {
 			for _, handler := range Filters {
 				if line.content == handler.Trigger {
 					currentIndex = pt.followHandler(currentIndex+1, finalIndex, handler)
-					fmt.Println("handler is ", handler.Trigger)
 					return
 				}
 			}
