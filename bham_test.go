@@ -2,12 +2,13 @@ package bham
 
 import (
 	"bytes"
+	"github.com/acsellers/assert"
 	"testing"
 	"text/template"
 )
 
 func TestParse(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t%title wat")
 		test.IsNil(err)
@@ -21,7 +22,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParse2(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t%title\n\t\t\twat")
 		test.IsNil(err)
@@ -35,7 +36,7 @@ func TestParse2(t *testing.T) {
 }
 
 func TestParseIf(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		tmpl := `%html
   %head
     = if .ShowWat
@@ -61,7 +62,7 @@ func TestParseIf(t *testing.T) {
 }
 
 func TestParseIfElse(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%head\n\t\t= if .ShowWat\n\t\t\t%title wat\n\t\t= else\n\t\t\t%title taw")
 		test.IsNil(err)
@@ -79,7 +80,7 @@ func TestParseIfElse(t *testing.T) {
 }
 
 func TestParseRange(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t= range .Wats\n\t\t\t%p wat")
 		test.IsNil(err)
@@ -97,7 +98,7 @@ func TestParseRange(t *testing.T) {
 }
 
 func TestParseRangeElse(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t= range .Wats\n\t\t\t%p wat\n\t\t= else\n\t\t\t%p no wat")
 		test.IsNil(err)
@@ -115,7 +116,7 @@ func TestParseRangeElse(t *testing.T) {
 }
 
 func TestTextPassthrough(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", `<!DOCTYPE html>
 %html
@@ -132,7 +133,7 @@ func TestTextPassthrough(t *testing.T) {
 }
 
 func TestOutput(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "<!DOCTYPE html>\n%html\n\t%body\n\t\t= .Name")
 		test.IsNil(err)
@@ -146,7 +147,7 @@ func TestOutput(t *testing.T) {
 }
 
 func TestFindAttrs(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		a, b := findAttrs("((((((")
 		test.AreEqual(a, "")
 		test.AreEqual(b, "((((((")
@@ -163,7 +164,7 @@ func TestFindAttrs(t *testing.T) {
 }
 
 func TestAttribute(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "<!DOCTYPE html>\n%html(ng-app)\n\t%body(ng-controller=\"PageController\")")
 		test.IsNil(err)
@@ -177,7 +178,7 @@ func TestAttribute(t *testing.T) {
 }
 
 func TestClass(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t%div.see.me(class=\"soon\")")
 		test.IsNil(err)
@@ -191,7 +192,7 @@ func TestClass(t *testing.T) {
 }
 
 func TestId(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t%div#see(id=\"me\")")
 		test.IsNil(err)
@@ -206,7 +207,7 @@ func TestId(t *testing.T) {
 }
 
 func TestBareId(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t%body\n\t\t#see(id=\"me\")")
 		test.IsNil(err)
@@ -221,7 +222,7 @@ func TestBareId(t *testing.T) {
 }
 
 func TestWith(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t= with $name := \"Killer\"\n\t\t= $name")
 		test.IsNil(err)
@@ -236,7 +237,7 @@ func TestWith(t *testing.T) {
 }
 
 func FuncTestVar(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html\n\t= $name := \"Killer\"\n\t\t= $name")
 		test.IsNil(err)
@@ -251,7 +252,7 @@ func FuncTestVar(t *testing.T) {
 }
 
 func TestEmbedded(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", "%html {{ .Name }}\n\t%head\n\t\t%title(class=\"{{ .Class }}\") wat")
 		test.IsNil(err)
@@ -270,7 +271,7 @@ func TestFilter(t *testing.T) {
     var name = "Andrew";
 `
 
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", tmplContent)
 		test.IsNil(err)
@@ -291,7 +292,7 @@ func TestFilter2(t *testing.T) {
     var name = "{{ .Name | js }}";
 `
 
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", tmplContent)
 		test.IsNil(err)

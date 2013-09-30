@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"html/template"
 	"testing"
+
+	"github.com/acsellers/assert"
 )
 
 const (
@@ -21,7 +23,7 @@ const (
 )
 
 func TestLarge(t *testing.T) {
-	within(t, func(test *aTest) {
+	assert.Within(t, func(test *assert.Test) {
 		t := template.New("test").Funcs(map[string]interface{}{})
 		tree, err := Parse("test.bham", large)
 		test.IsNil(err)
